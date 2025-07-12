@@ -60,11 +60,12 @@ const Cita = () => {
       );
 
       // 3. Guardar en base de datos MySQL
-      await fetch('http://localhost:4000/reservar-cita', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, celular, email, fecha, hora }),
-      });
+     await fetch('https://barberia-backend-2.onrender.com/reservar-cita', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ nombre, celular, email, fecha_cita: fecha, hora_cita: hora }),
+});
+
 
       setConfirmacionVisible(true);
     } catch (err) {
