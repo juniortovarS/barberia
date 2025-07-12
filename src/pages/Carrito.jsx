@@ -17,19 +17,19 @@ const Carrito = () => {
  const pagarConMercadoPago = async () => {
   console.log("🛍️ Enviando carrito:", carrito);
   try {
-    const response = await axios.post("http://localhost:4000/crear-preferencia", {
+    const response = await axios.post("https://barberia-backend-2.onrender.com/crear-preferencia", {
       carrito,
     });
 
     const preferenceId = response.data.id;
 
-    // ✅ Redirige correctamente al entorno de prueba de MercadoPago
     window.location.href = `https://sandbox.mercadopago.com.pe/checkout/v1/redirect?pref_id=${preferenceId}`;
   } catch (error) {
     console.error("❌ Error al procesar el pago:", error.response?.data || error.message);
     alert("Ocurrió un error al intentar procesar el pago.");
   }
 };
+
 
 
   return (
