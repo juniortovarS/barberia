@@ -2,7 +2,11 @@
   "name": "barberia",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://juniortovars.github.io/carrito",
+"homepage": "https://barberiajuniortovar.onrender.com"
+
+,
+
+
 
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
