@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+.footer-container {
+  background-color: #222222;
+  color: white;
+  padding: 60px 20px 30px;
+  font-family: 'Anton', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 40px;
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 40px;
+}
+
+.footer-logo {
+  font-size: 2rem;
+  color: #C9A66B;
+  margin-bottom: 10px;
+}
+
+.footer-desc {
+  font-size: 1rem;
+  color: #ccc;
+  line-height: 1.4;
+  margin-top: 10px;
+}
+
+.footer-links h4,
+.footer-contact h4,
+.footer-social h4 {
+  font-size: 1.2rem;
+  color: #C9A66B;
+  margin-bottom: 15px;
+}
+
+.footer-links ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-links ul li {
+  margin-bottom: 10px;
+}
+
+.footer-links a {
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #C9A66B;
+}
+
+.footer-contact p {
+  font-size: 0.95rem;
+  color: #ccc;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-social .social-icons {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-social a {
+  color: white;
+  font-size: 1.3rem;
+  transition: color 0.3s ease;
+}
+
+.footer-social a:hover {
+  color: #C9A66B;
+}
+
+.footer-bottom {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #999;
+  border-top: 1px solid #333;
+  padding-top: 20px;
+  width: 100%;
+}
+
+.footer-horario h4 {
+  font-size: 1.2rem;
+  color: #C9A66B;
+  margin-bottom: 15px;
+}
+
+.footer-horario ul {
+  list-style: none;
+  padding: 0;
+  font-size: 1rem;
+  color: #ccc;
+  line-height: 1.5;
+}

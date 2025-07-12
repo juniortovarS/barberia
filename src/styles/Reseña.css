@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+.reseñas-container {
+  background-color: #222222;
+  color: #fff;
+  padding: 120px 20px 100px;
+  font-family: 'Anton', sans-serif;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 500px;
+  transition: background-color 0.6s ease;
+}
+
+.reseñas-container.oscuro {
+  background-color: #222222; /* se oscurece levemente durante el corte */
+}
+
+.reseñas-titulo {
+  font-size: 2.5rem;
+  color: #C9A66B;
+  margin-bottom: 50px;
+  z-index: 2;
+  position: relative;
+}
+
+.reseña-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.reseña-img {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #C9A66B;
+  margin-bottom: 25px;
+}
+
+.reseña-texto {
+  font-size: 1.2rem;
+  color: #ccc;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.reseña-nombre {
+  font-size: 1.4rem;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.reseña-cargo {
+  font-size: 1rem;
+  color: #aaa;
+}
+
+.reseña-dots {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.reseña-dots span {
+  width: 10px;
+  height: 10px;
+  background-color: #aaa;
+  border-radius: 50%;
+  opacity: 0.6;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.reseña-dots span.active {
+  background-color: #C9A66B;
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+/* Fade in */
+.fade-in {
+  animation: fadeInUp 1.5s ease;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tijera animada */
+.tijera-corte {
+  position: absolute;
+  top: 50%;
+  left: -100px;
+  width: 90px;
+  z-index: 20;
+  animation: corteHorizontal 2.4s ease-in-out forwards;
+  filter: drop-shadow(0px 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+@keyframes corteHorizontal {
+  0% {
+    left: -100px;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+  100% {
+    left: 110%;
+    opacity: 0;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .reseñas-titulo {
+    font-size: 2rem;
+  }
+  .reseña-texto {
+    font-size: 1rem;
+  }
+  .reseña-nombre {
+    font-size: 1.2rem;
+  }
+}
+
+
+/* 🔼 AJUSTE PARA UNIR RESEÑAS CON LA SECCIÓN ANTERIOR */
+.reseñas-container {
+  margin-top: -100px; /* 🔁 Sube más la sección */
+  padding-top: 60px;  /* 🔁 Ajusta el espacio interno */
+}

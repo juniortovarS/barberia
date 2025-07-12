@@ -1,0 +1,160 @@
+/* Global: evita márgenes y scroll horizontal, permite scroll vertical */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Contenedor principal del collage */
+.servicio-collage {
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background-color: #222222;
+}
+
+/* Cada fila contiene 4 imágenes */
+.servicio-row {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+/* Estilo de cada imagen del collage */
+.servicio-img {
+  width: 25%;        /* 4 imágenes por fila */
+  height: 50vh;      /* Cada fila ocupa 50% de alto de pantalla */
+  object-fit: cover; /* Corta bien sin deformar */
+  display: block;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+.servicio-titulo {
+  font-family: 'Anton', sans-serif;
+  font-size: 2.8rem;
+  color: #C9A66B;
+  text-align: center;
+  margin: 40px 0 10px;
+  line-height: 1.2;
+}
+
+.servicio-subtitulo {
+  font-family: 'Anton', sans-serif;
+  font-size: 1.1rem;
+  color: #ccc;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+
+
+.servicio-item {
+  position: relative;
+  width: 25%;
+  height: 50vh;
+  overflow: hidden;
+}
+
+.servicio-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.servicio-overlay {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6); /* Oscurece la imagen */
+  color: #fff;
+  font-family: 'Anton', sans-serif;
+  font-size: 1.4rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  text-align: center;
+  padding: 10px;
+}
+
+
+
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.servicio-collage {
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background-color: #222222;
+  font-family: 'Anton', sans-serif;
+  margin-top: 0; /* ✅ Evita colisiones */
+  padding-top: 40px; /* 🔼 Añade un pequeño espacio visual si quieres */
+}
+
+
+.servicio-titulo {
+  font-size: 2.8rem;
+  color: #C9A66B;
+  text-align: center;
+  margin: 40px 0 10px;
+  line-height: 1.2;
+}
+
+.servicio-subtitulo {
+  font-size: 1.1rem;
+  color: #ccc;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.servicio-row {
+  display: flex;
+  width: 100%;
+}
+
+.servicio-item {
+  position: relative;
+  width: 25%;
+  height: 50vh;
+  overflow: hidden;
+}
+
+.servicio-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.servicio-overlay-box {
+  position: absolute;
+  bottom: 0px;
+  right: 0;
+  width: 100%;
+  background-color: #2222225c;
+  color: #fff;
+  font-size: 1.4rem;
+  padding: 18px 14px;
+  text-align: center;
+  transform: translateX(0);       /* 🔁 Siempre visible */
+  opacity: 1;                     /* 🔁 Siempre visible */
+}
+
+
+.servicio-item:hover .servicio-overlay-box {
+  transform: translateX(0);
+  opacity: 1;
+}

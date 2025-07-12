@@ -1,0 +1,267 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;600&display=swap');
+
+/* NAVBAR PRINCIPAL PROFESIONAL */
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 65px;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: black;
+  color: white;
+  transition: background-color 0.4s ease, box-shadow 0.4s ease;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+.navbar.scrolled {
+  background-color: rgba(0, 0, 0, 0.9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.navbar-transparent {
+  background-color: rgba(0, 0, 0, 0.638) !important;
+  box-shadow: none !important;
+}
+
+.navbar-logo {
+  height: 90px;
+  object-fit: contain;
+  border-radius: 12px;
+  font-family: 'Anton', sans-serif;
+}
+
+.navbar-left,
+.navbar-center,
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-center {
+  flex: 1;
+  justify-content: center;
+}
+
+.navbar-links {
+  list-style: none;
+  display: flex;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar-links li a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0.5px;
+  transition: color 0.3s ease;
+  position: relative;
+}
+
+.navbar-links li a::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -5px;
+  left: 0;
+  background-color: #C9A66B;
+  transition: width 0.3s ease;
+}
+
+.navbar-links li a:hover::after {
+  width: 100%;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  height: 100%;
+  min-width: 100px;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 44px;
+  overflow: visible;
+}
+
+.navbar-right .icon {
+  color: white;
+  font-size: 1.6rem;
+  cursor: pointer;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+/* HERO DE INICIO (opcional) */
+.hero-header {
+  height: 100vh;
+  background-image: url("https://images.unsplash.com/photo-1603936056254-4a3df44cfe71");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 120px;
+}
+
+.hero-title {
+  color: white;
+  font-size: 3.5rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 1.5rem 3rem;
+  border-radius: 12px;
+  text-align: center;
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 2px;
+}
+
+/* ------------------------------ */
+/* 💎 CARRITO DISEÑO MODERNO     */
+/* ------------------------------ */
+
+.carrito-popup-navbar {
+  position: absolute;
+  top: 70px;
+  right: 20px;
+  width: 280px;
+  max-height: 360px;
+  background-color: #222;
+  color: #C9A66B;
+  border: 1px solid #C9A66B;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 6px 16px rgba(201, 166, 107, 0.4);
+  font-family: 'Poppins', sans-serif;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+.carrito-popup-navbar * {
+  color: #C9A66B;
+}
+
+.cerrar-carrito-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #C9A66B;
+  cursor: pointer;
+  z-index: 1001;
+}
+
+.carrito-popup-navbar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.carrito-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 8px;
+}
+
+.carrito-item img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 0 6px rgba(201, 166, 107, 0.5);
+}
+
+.carrito-item-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.item-nombre {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.precio-control-linea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.precio-texto {
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cantidad-control-inline {
+  display: flex;
+  gap: 6px;
+}
+
+.cantidad-control-inline button {
+  background-color: transparent;
+  border: 1px solid #C9A66B;
+  color: #C9A66B;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.cantidad-control-inline button:hover {
+  background-color: #C9A66B;
+  color: #222;
+}
+
+.subtotal {
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: right;
+  margin-top: 10px;
+}
+
+.ver-carrito-btn {
+  display: block;
+  text-align: center;
+  padding: 8px;
+  background-color: #C9A66B;
+  color: #222 !important;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.ver-carrito-btn:hover {
+  background-color: #b39748;
+}

@@ -1,0 +1,164 @@
+.carrito-page {
+  max-width: 900px;
+  margin: 80px auto;
+  padding: 20px;
+  font-family: 'Poppins', sans-serif;
+  color: #333;
+}
+
+.carrito-titulo {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2rem;
+  color: #C9A66B;
+}
+
+.carrito-vacio {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #888;
+}
+
+.carrito-listado {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.carrito-item {
+  display: flex;
+  gap: 20px;
+  background: #f9f9f9;
+  border-radius: 10px;
+  padding: 15px;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.carrito-item img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.carrito-detalle {
+  flex: 1;
+}
+
+.carrito-controles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.carrito-controles button {
+  width: 28px;
+  height: 28px;
+  font-size: 1rem;
+  border: 1px solid #C9A66B;
+  background: transparent;
+  color: #C9A66B;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.carrito-controles button:hover {
+  background-color: #C9A66B;
+  color: white;
+}
+
+.carrito-total {
+  margin-top: 30px;
+  text-align: right;
+}
+
+.carrito-total h3 {
+  font-size: 1.5rem;
+  color: #222;
+}
+
+.btn-pagar {
+  margin-top: 10px;
+  padding: 10px 24px;
+  background-color: #C9A66B;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-pagar:hover {
+  background-color: #b8924a;
+}
+
+.carrito-contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .carrito-contenedor {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.carrito-listado {
+  flex: 2;
+}
+
+.carrito-resumen {
+  flex: 1;
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.05);
+  font-family: 'Poppins', sans-serif;
+}
+
+.carrito-resumen h2 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.carrito-resumen .linea {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.envio-detalle {
+  font-size: 0.9rem;
+  margin-left: 5px;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.total {
+  border-top: 1px solid #ddd;
+  padding-top: 15px;
+  font-size: 1.2rem;
+}
+
+.btn-pagar {
+  margin-top: 25px;
+  width: 100%;
+  padding: 12px;
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-pagar:hover {
+  background-color: #38a169;
+}
