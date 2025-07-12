@@ -2,7 +2,8 @@
   "name": "barberia",
   "version": "0.1.0",
   "private": true,
- "homepage": "https://juniortovarS.github.io/barberia",
+ "homepage": ".",
+
 
 
   "dependencies": {
