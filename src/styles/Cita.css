@@ -867,15 +867,50 @@
 /* Responsive Tweaks */
 @media (max-width: 580px) {
   .wizard-box {
-    padding: 30px 20px !important;
+    padding: 24px 16px !important;
+    max-height: 90vh;
+    overflow-y: auto;
   }
   .horas-grid-modern {
     grid-template-columns: repeat(3, 1fr);
   }
   .cita-text-main {
-    font-size: 2.3rem;
+    font-size: 2rem;
+  }
+  .cita-text-top {
+    font-size: 0.9rem;
+    letter-spacing: 3px;
   }
   .confirmacion-box {
-    padding: 30px 20px !important;
+    padding: 24px 16px !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  /* React Datepicker Mobile Scaling */
+  .react-datepicker {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .react-datepicker__month-container {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .react-datepicker__day-name, .react-datepicker__day {
+    width: 2rem !important;
+    line-height: 2rem !important;
+    margin: 0.1rem !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .horas-grid-modern {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .react-datepicker__day-name, .react-datepicker__day {
+    width: 1.7rem !important;
+    line-height: 1.7rem !important;
+    margin: 0.08rem !important;
+    font-size: 0.8rem !important;
   }
 }
