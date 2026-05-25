@@ -2,6 +2,7 @@ import React from "react";
 import axios from "axios";
 import "../styles/Carrito.css";
 import { useCarrito } from "../components/CarritoContext";
+import { API_URL } from "../config";
 
 const Carrito = () => {
   const { carrito, aumentarCantidad, disminuirCantidad } = useCarrito();
@@ -17,7 +18,7 @@ const Carrito = () => {
  const pagarConMercadoPago = async () => {
   console.log("🛍️ Enviando carrito:", carrito);
   try {
-    const response = await axios.post("https://barberia-backend-2.onrender.com/crear-preferencia", {
+    const response = await axios.post(`${API_URL}/crear-preferencia`, {
       carrito,
     });
 

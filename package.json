@@ -6,6 +6,7 @@
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@remotion/player": "^4.0.466",
+    "@supabase/supabase-js": "^2.106.2",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -21,6 +22,7 @@
     "react-router-dom": "^7.6.3",
     "react-scripts": "5.0.1",
     "remotion": "^4.0.466",
+    "tesseract.js": "^7.0.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

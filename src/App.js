@@ -19,8 +19,11 @@ import Tienda from "./pages/Tienda";
 import Carrito from "./pages/Carrito"; // ✅ NUEVA PÁGINA CARRITO
 import Checkout from "./pages/Checkout"; // importa tu página
 import Confirmacion from "./pages/Confirmacion";
+import Admin from "./pages/Admin"; // ✅ IMPORTA PANEL DE ADMINISTRADOR
 
 import { CarritoProvider } from "./components/CarritoContext";
+import { AuthProvider } from "./components/AuthContext"; // ✅ IMPORTA AUTH CONTEXT
+import ProtectedRoute from "./components/ProtectedRoute"; // ✅ IMPORTA PROTECTED ROUTE
 
 // Import assets to preload
 import citaBg from "./assets/cita.png";
@@ -62,37 +65,40 @@ function App() {
     return () => observer.disconnect();
   }, [location]);
   return (
-    <CarritoProvider>
-      <Navbar />
+    <AuthProvider>
+      <CarritoProvider>
+        <Navbar />
 
-      <Routes>
-        {/* HOME */}
-        <Route
-          path="/"
-          element={
-            <>
-              <StickyBanner />
-              <Section1 />
-              <Section2 />
-              <Section3 />
-              <Servicio />
-              <Reseñas />
-              <Footer />
-            </>
-          }
-        />
+        <Routes>
+          {/* HOME */}
+          <Route
+            path="/"
+            element={
+              <>
+                <StickyBanner />
+                <Section1 />
+                <Section2 />
+                <Section3 />
+                <Servicio />
+                <Reseñas />
+                <Footer />
+              </>
+            }
+          />
 
-        {/* PÁGINAS EXTERNAS */}
-        <Route path="/cita" element={<Cita />} />
-        <Route path="/servicios" element={<PaginaServicios />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/contacto" element={<Contacto />} />
-        <Route path="/tienda" element={<Tienda />} />
-        <Route path="/carrito" element={<Carrito />} /> {/* ✅ AÑADIDA RUTA */}
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/confirmacion" element={<Confirmacion />} />
-      </Routes>
-    </CarritoProvider>
+          {/* PÁGINAS EXTERNAS */}
+          <Route path="/cita" element={<Cita />} />
+          <Route path="/servicios" element={<PaginaServicios />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/contacto" element={<Contacto />} />
+          <Route path="/tienda" element={<Tienda />} />
+          <Route path="/carrito" element={<Carrito />} /> {/* ✅ AÑADIDA RUTA */}
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/confirmacion" element={<Confirmacion />} />
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} /> {/* ✅ RUTA PROTEGIDA */}
+        </Routes>
+      </CarritoProvider>
+    </AuthProvider>
   );
 }
 
