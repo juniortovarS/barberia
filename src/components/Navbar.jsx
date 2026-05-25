@@ -1,13 +1,14 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../styles/Navbar.css";
 import logonav from "../assets/logonav.png";
-import { FaShoppingCart, FaSearch } from "react-icons/fa";
+import { FaShoppingCart, FaSearch, FaBars, FaTimes } from "react-icons/fa";
 import { useCarrito } from "./CarritoContext";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = React.useState(false);
   const [transparent, setTransparent] = React.useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const {
     carrito,
     mostrarCarrito,
@@ -29,7 +30,18 @@ const Navbar = () => {
 
   useEffect(() => {
     setMostrarCarrito(false);
+    setMenuOpen(false);
   }, [location.pathname, setMostrarCarrito]);
+
+  // Bloquear scroll del body cuando el menú está abierto
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
 
   const toggleCarrito = () => {
     setMostrarCarrito(!mostrarCarrito);
@@ -39,6 +51,15 @@ const Navbar = () => {
     (acc, item) => acc + item.precio * item.cantidad,
     0
   );
+
+  const links = [
+    { to: "/", label: "INICIO" },
+    { to: "/cita", label: "RESERVAR CITA" },
+    { to: "/servicios", label: "SERVICIOS" },
+    { to: "/blog", label: "BLOG" },
+    { to: "/contacto", label: "CONTACTO" },
+    { to: "/tienda", label: "TIENDA" },
+  ];
 
   return (
     <>
@@ -53,26 +74,14 @@ const Navbar = () => {
           </Link>
         </div>
 
+        {/* Links de escritorio */}
         <div className="navbar-center">
           <ul className="navbar-links">
-            <li>
-              <Link to="/" className="navbar-link">INICIO</Link>
-            </li>
-            <li>
-              <Link to="/cita" className="navbar-link">RESERVAR CITA</Link>
-            </li>
-            <li>
-              <Link to="/servicios" className="navbar-link">SERVICIOS</Link>
-            </li>
-            <li>
-              <Link to="/blog" className="navbar-link">BLOG</Link>
-            </li>
-            <li>
-              <Link to="/contacto" className="navbar-link">CONTACTO</Link>
-            </li>
-            <li>
-              <Link to="/tienda" className="navbar-link">TIENDA</Link>
-            </li>
+            {links.map((link) => (
+              <li key={link.to}>
+                <Link to={link.to} className="navbar-link">{link.label}</Link>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -87,9 +96,40 @@ const Navbar = () => {
           <div className="icon-wrapper">
             <FaSearch className="icon" />
           </div>
+
+          {/* Botón hamburguesa — solo visible en móvil */}
+          <button
+            className="hamburger-btn"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+          >
+            {menuOpen ? <FaTimes /> : <FaBars />}
+          </button>
         </div>
       </nav>
 
+      {/* Menú móvil de pantalla completa */}
+      <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
+        <ul className="mobile-menu-links">
+          {links.map((link, i) => (
+            <li
+              key={link.to}
+              className="mobile-menu-item"
+              style={{ animationDelay: `${i * 0.07}s` }}
+            >
+              <Link
+                to={link.to}
+                className="mobile-menu-link"
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Overlay carrito */}
       {mostrarCarrito && (
         <div
           className="carrito-popup-navbar"
@@ -113,22 +153,20 @@ const Navbar = () => {
             <ul>
               {carrito.map((item, index) => (
                 <li key={index} className="carrito-item">
-  <img src={item.imagen} alt={item.nombre} />
-  <div className="carrito-item-info">
-    <div className="item-nombre">{item.nombre}</div>
-    <div className="precio-control-linea">
-      <span className="precio-texto">
-        {item.cantidad} × S/ {item.precio.toFixed(2)}
-      </span>
-      <div className="cantidad-control-inline">
-        <button onClick={() => disminuirCantidad(item.id)} aria-label="Disminuir">−</button>
-        <button onClick={() => aumentarCantidad(item.id)} aria-label="Aumentar">+</button>
-      </div>
-    </div>
-  </div>
-</li>
-
-
+                  <img src={item.imagen} alt={item.nombre} />
+                  <div className="carrito-item-info">
+                    <div className="item-nombre">{item.nombre}</div>
+                    <div className="precio-control-linea">
+                      <span className="precio-texto">
+                        {item.cantidad} × S/ {item.precio.toFixed(2)}
+                      </span>
+                      <div className="cantidad-control-inline">
+                        <button onClick={() => disminuirCantidad(item.id)} aria-label="Disminuir">−</button>
+                        <button onClick={() => aumentarCantidad(item.id)} aria-label="Aumentar">+</button>
+                      </div>
+                    </div>
+                  </div>
+                </li>
               ))}
             </ul>
           )}
@@ -146,5 +184,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-
