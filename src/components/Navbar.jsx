@@ -29,7 +29,7 @@ const Navbar = () => {
 
   useEffect(() => {
     setMostrarCarrito(false);
-  }, [location.pathname]);
+  }, [location.pathname, setMostrarCarrito]);
 
   const toggleCarrito = () => {
     setMostrarCarrito(!mostrarCarrito);
