@@ -49,7 +49,7 @@ const Section1 = () => {
         <p className="text-bottom animate-fade-in-up-3">¡Visítanos en cualquiera de nuestras 5 sedes a nivel nacional!</p>
 
         <Link to="/cita" className="section1-button animate-fade-in-up-4" style={{ textDecoration: 'none' }}>
-          <span className="btn-text">Reservar Cita</span>
+          <div className="cita-btn-text">RESERVAR CITA</div>
           <span className="btn-icon">↗</span>
         </Link>
       </div>

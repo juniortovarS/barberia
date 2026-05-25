@@ -176,7 +176,7 @@ const Section2 = () => {
       </div>
 
       <div className="section2-text reveal fade-right">
-        <h2><Typewriter text="Lo que comenzó con esfuerzo, hoy se transforma en excelencia." /></h2>
+        <h2><Typewriter text="      Lo que comenzó con esfuerzo, hoy se transforma en excelencia." /></h2>
         <p className="reveal fade-up" style={{ transitionDelay: '0.3s' }}>
           Empezamos desde cero, con una silla, unas tijeras y el sueño de construir algo grande. Con esfuerzo, dedicación y una pasión auténtica por el arte de la barbería, fuimos ganándonos la confianza de cada cliente que cruzaba nuestra puerta. Hoy, ese pequeño puesto se ha transformado en una barbería completamente remodelada, moderna y profesional, sin perder la esencia que nos vio nacer.
         </p>

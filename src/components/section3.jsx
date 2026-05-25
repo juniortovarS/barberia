@@ -125,10 +125,10 @@ const Section3 = () => {
     <section ref={sectionRef} className={`section3-container ${visible ? "show" : ""}`}>
       {/* TEXTO A LA IZQUIERDA */}
       <div className="section3-text reveal fade-left">
-        <h2><Typewriter text="El arte del corte clásico y moderno en constante evolución." /></h2>
+        <h2><Typewriter text="   El arte del corte clásico y moderno en constante evolución." /></h2>
         <p className="reveal fade-up" style={{ transitionDelay: '0.3s' }}>
           Nuestro equipo de barberos profesionales combina años de experiencia con las técnicas más vanguardistas de la moda urbana. En cada degradado, afeitado clásico y perfilado, buscamos no solo la perfección técnica, sino una experiencia personalizada de cuidado y relajación. No cortamos cabello; esculpimos tu identidad.
-        </p>
+        </p> 
       </div>
 
       {/* VIDEOS A LA DERECHA — swipeable en celular */}
