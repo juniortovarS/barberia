@@ -10,39 +10,38 @@ const videos = [video4, video5, video6];
 
 const Section3 = () => {
   const sectionRef = useRef();
+  const containerRef = useRef();
   const videoRefs = useRef([]);
   const [visible, setVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
- useEffect(() => {
-  const sectionElement = sectionRef.current;
+  useEffect(() => {
+    const sectionElement = sectionRef.current;
+    if (!sectionElement) return;
 
-  if (!sectionElement) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const isVisible = entry.isIntersecting;
+        setVisible(isVisible);
+        if (!isVisible) {
+          videoRefs.current.forEach((video) => {
+            if (video) {
+              video.pause();
+              video.currentTime = 0;
+              video.muted = true;
+            }
+          });
+          setCurrentIndex(0);
+        }
+      },
+      { threshold: 0.3 }
+    );
 
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      const isVisible = entry.isIntersecting;
-      setVisible(isVisible);
-      if (!isVisible) {
-        videoRefs.current.forEach((video) => {
-          if (video) {
-            video.pause();
-            video.currentTime = 0;
-            video.muted = true;
-          }
-        });
-        setCurrentIndex(0);
-      }
-    },
-    { threshold: 0.3 }
-  );
-
-  observer.observe(sectionElement);
-
-  return () => {
-    observer.unobserve(sectionElement); // ⚠️ Usamos la variable local
-  };
-}, []);
+    observer.observe(sectionElement);
+    return () => {
+      observer.unobserve(sectionElement);
+    };
+  }, []);
 
   useEffect(() => {
     if (visible && videoRefs.current[0]) {
@@ -55,6 +54,14 @@ const Section3 = () => {
   const handleEnded = (index) => {
     const next = (index + 1) % videos.length;
     setCurrentIndex(next);
+
+    // En celular, deslizar al siguiente video
+    if (window.innerWidth <= 768 && containerRef.current) {
+      const container = containerRef.current;
+      const cardWidth = container.scrollWidth / videos.length;
+      container.scrollTo({ left: next * cardWidth, behavior: "smooth" });
+    }
+
     videoRefs.current.forEach((video, i) => {
       if (video) {
         if (i === next) {
@@ -68,7 +75,31 @@ const Section3 = () => {
     });
   };
 
+  // Detectar scroll horizontal en celular
+  const handleScroll = () => {
+    if (!containerRef.current || window.innerWidth > 768) return;
+    const container = containerRef.current;
+    const scrollLeft = container.scrollLeft;
+    const cardWidth = container.scrollWidth / videos.length;
+    const newIdx = Math.round(scrollLeft / cardWidth);
+
+    if (newIdx !== currentIndex && newIdx >= 0 && newIdx < videos.length) {
+      setCurrentIndex(newIdx);
+      videoRefs.current.forEach((video, i) => {
+        if (video) {
+          if (i === newIdx) {
+            video.muted = true;
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        }
+      });
+    }
+  };
+
   const handleMouseEnter = (index) => {
+    if (window.innerWidth <= 768) return;
     setCurrentIndex(index);
     videoRefs.current.forEach((video, i) => {
       if (video) {
@@ -83,6 +114,7 @@ const Section3 = () => {
   };
 
   const handleMouseLeave = (index) => {
+    if (window.innerWidth <= 768) return;
     const video = videoRefs.current[index];
     if (video && currentIndex !== index) {
       video.pause();
@@ -99,26 +131,49 @@ const Section3 = () => {
         </p>
       </div>
 
-      {/* VIDEOS A LA DERECHA */}
-      <div className="floating-videos">
-        {videos.map((src, i) => (
-          <div
-            key={i}
-            className={`video-wrapper fade-in-delay-${i}`}
-            onMouseEnter={() => handleMouseEnter(i)}
-            onMouseLeave={() => handleMouseLeave(i)}
-          >
-            <video
-              ref={(el) => (videoRefs.current[i] = el)}
-              className="video-player"
-              src={src}
-              muted
-              playsInline
-              onEnded={() => handleEnded(i)}
-              controls={false}
+      {/* VIDEOS A LA DERECHA — swipeable en celular */}
+      <div className="video-section-mobile-wrapper-s3">
+        <div
+          ref={containerRef}
+          className="floating-videos"
+          onScroll={handleScroll}
+        >
+          {videos.map((src, i) => (
+            <div
+              key={i}
+              className={`video-wrapper fade-in-delay-${i} ${i === currentIndex ? "active-slide" : ""}`}
+              onMouseEnter={() => handleMouseEnter(i)}
+              onMouseLeave={() => handleMouseLeave(i)}
+            >
+              <video
+                ref={(el) => (videoRefs.current[i] = el)}
+                className="video-player"
+                src={src}
+                muted
+                playsInline
+                onEnded={() => handleEnded(i)}
+                controls={false}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Puntos de navegación para celular */}
+        <div className="section3-mobile-dots">
+          {videos.map((_, i) => (
+            <span
+              key={i}
+              className={`s3-mobile-dot ${i === currentIndex ? "active" : ""}`}
+              onClick={() => {
+                if (containerRef.current) {
+                  const container = containerRef.current;
+                  const cardWidth = container.scrollWidth / videos.length;
+                  container.scrollTo({ left: i * cardWidth, behavior: "smooth" });
+                }
+              }}
             />
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );

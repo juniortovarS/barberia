@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import "../styles/section1.css";
 import studio1 from "../assets/studio1.png";
 import studio2 from "../assets/studio2.png";
@@ -47,10 +48,10 @@ const Section1 = () => {
         <h1 className="text-main animate-fade-in-up-2">TU ESTILO COMIENZA AQUÍ</h1>
         <p className="text-bottom animate-fade-in-up-3">¡Visítanos en cualquiera de nuestras 5 sedes a nivel nacional!</p>
 
-        <div className="section1-button animate-fade-in-up-4">
-          <span className="btn-text">Reserva aquí</span>
+        <Link to="/cita" className="section1-button animate-fade-in-up-4" style={{ textDecoration: 'none' }}>
+          <span className="btn-text">Reservar Cita</span>
           <span className="btn-icon">↗</span>
-        </div>
+        </Link>
       </div>
 
     </section>

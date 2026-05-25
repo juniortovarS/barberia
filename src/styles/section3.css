@@ -125,21 +125,75 @@
 
 @media (max-width: 768px) {
   .section3-container {
-    padding: 80px 20px;
+    padding: 60px 20px;
+    overflow-x: hidden;
   }
 
-  .section3-container .floating-videos {
+  /* Contenedor wrapper para celular */
+  .video-section-mobile-wrapper-s3 {
+    width: 100vw;
+    display: flex;
     flex-direction: column;
-    width: 100%;
-    gap: 24px;
+    align-items: center;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-bottom: 10px;
+  }
+
+  /* Videos horizontales swipeables con scroll-snap */
+  .section3-container .floating-videos {
+    flex-direction: row !important;
+    width: 100vw !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 20px !important;
+    padding: 0 40px !important;
+    justify-content: flex-start !important;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth !important;
+  }
+
+  /* Ocultar barra de scroll */
+  .section3-container .floating-videos::-webkit-scrollbar {
+    display: none;
   }
 
   .section3-container .video-wrapper {
-    width: 85%;
-    max-width: 280px;
+    flex: 0 0 calc(100vw - 80px) !important;
+    width: calc(100vw - 80px) !important;
+    max-width: 280px !important;
+    scroll-snap-align: center !important;
+    margin: 0 !important;
+  }
+
+  /* Indicadores de página estilo reel */
+  .section3-mobile-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    z-index: 10;
+  }
+
+  .s3-mobile-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+
+  .s3-mobile-dot.active {
+    background-color: #ffffff;
+    transform: scale(1.3);
+    width: 16px;
+    border-radius: 4px;
   }
 
   .section3-text h2 {
-    font-size: 2.4rem;
+    font-size: 2.2rem;
   }
 }
