@@ -1,272 +1,91 @@
 .tienda-container {
-  padding: 60px 40px;
-  background-color: #222222;
-  color: #C9A66B;
-  font-family: 'Poppins', sans-serif;
+  padding: 100px 40px 60px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
   min-height: 100vh;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
 }
 
 .tienda-info {
   max-width: 800px;
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 50px;
 }
 
 .tienda-titulo {
-  font-size: 2.5rem;
-  color: #C9A66B;
-  margin-bottom: 12px;
+  font-family: var(--font-heading);
+  font-size: 3rem;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .tienda-descripcion {
   font-size: 1rem;
-  line-height: 1.6;
-  color: #ddd;
-}
-
-/* PRODUCTO */
-.producto-card {
-  width: 280px;
-  background-color: #1b1b1b;
-  border: 1px solid #C9A66B;
-  border-radius: 10px;
-  padding: 20px;
-  text-align: center;
-  position: relative;
-  box-shadow: 0 0 15px rgba(201, 166, 107, 0.15);
-  transition: transform 0.3s ease;
-}
-
-.producto-card:hover {
-  transform: translateY(-5px);
-}
-
-.imagen-hover {
-  position: relative;
-  cursor: pointer;
-}
-
-.imagen-hover img {
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-.overlay-hover {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.75);
-  color: #C9A66B;
-  font-weight: bold;
-  text-align: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: 0 0 8px 8px;
-}
-
-.imagen-hover:hover .overlay-hover {
-  opacity: 1;
-}
-
-/* CARRITO EMERGENTE */
-.carrito-popup {
-  position: fixed;
-  top: 80px;
-  right: 40px;
-  width: 480px;
-  height: 480px;
-  background-color: #1e1e1e;
-  color: #C9A66B;
-  border: 2px solid #C9A66B;
-  border-radius: 12px;
-  padding: 20px;
-  z-index: 1000;
-  overflow-y: auto;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
-}
-
-.carrito-popup h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #C9A66B;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.carrito-popup ul {
-  list-style: none;
-  padding: 0;
-  margin-top: 15px;
-}
-
-.carrito-popup li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #444;
-  color: #eee;
-}
-
-.carrito-popup .subtotal {
-  margin-top: 20px;
-  font-weight: 600;
-  color: #C9A66B;
-  text-align: right;
-}
-
-.carrito-popup .ver-carrito-btn {
-  display: block;
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #C9A66B;
-  color: black;
-  text-align: center;
-  border-radius: 6px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background-color 0.3s ease;
-}
-
-.carrito-popup .ver-carrito-btn:hover {
-  background-color: #b8945e;
-}
-
-/* BOTÓN CERRAR */
-.carrito-popup .cerrar-btn {
-  position: absolute;
-  top: 10px;
-  right: 14px;
-  font-size: 1.4rem;
-  color: #C9A66B;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-
-.mensaje-confirmacion {
-  margin-top: 12px;
-  color: #C9A66B;
-  font-weight: 600;
-  background-color: rgba(201, 166, 107, 0.1);
-  border: 1px solid #C9A66B;
-  padding: 10px;
-  border-radius: 6px;
-  animation: fadeInOut 3s ease forwards;
-}
-
-@keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(10px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-10px); }
-}
-
-
-.productos-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-  justify-content: center;
-}
-
-/* Estilo para el header de la tienda */
-.tienda-header {
-  position: relative;
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.tienda-header-img {
-  width: 100%;
-  max-height: 300px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.tienda-header-title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 3rem;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 12px 32px;
-  border-radius: 12px;
-  font-family: 'Anton', sans-serif;
-  letter-spacing: 2px;
-}
-
-.descripcion-tienda {
-  max-width: 800px;
-  margin: 0 auto 40px;
-  text-align: center;
-  font-size: 1rem;
-  color: #555;
   line-height: 1.7;
-}
-
-.productos-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
-  justify-content: center;
-}
-
-@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
-
-.tienda-container {
-  font-family: 'Poppins', sans-serif;
-  color: #222;
+  color: var(--text-secondary);
 }
 
 /* HEADER estilo pantalla completa */
 .tienda-header-fullscreen {
-  width: 110%;
-  height: 60vh;
+  width: 100%;
+  height: 40vh;
   background-size: cover;
   background-position: center;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--border-color);
+}
+
+/* Dark overlay for full screen header image */
+.tienda-header-fullscreen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1;
 }
 
 .tienda-overlay-text {
-
-  padding: 30px 50px;
-  border-radius: 12px;
+  position: relative;
+  z-index: 2;
   text-align: center;
-  animation: fadeIn 0.8s ease-in-out;
 }
 
 .tienda-text-main {
-  font-family: 'Anton', sans-serif;
+  font-family: var(--font-heading);
   font-size: 3.5rem;
-  color: #C9A66B;
+  color: var(--text-primary);
   margin: 0;
   letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
 }
 
 /* Descripción centrada */
 .descripcion-tienda {
   max-width: 800px;
-  margin: 50px auto;
+  margin: 60px auto 40px;
   text-align: center;
-  font-size: 1.1rem;
-  color: #C9A66B;
+  font-size: 1.05rem;
+  color: var(--text-secondary);
   line-height: 1.7;
   padding: 0 20px;
+}
+
+.descripcion-tienda p {
+  margin-bottom: 16px;
 }
 
 /* Grilla de productos */
@@ -276,68 +95,88 @@
   gap: 40px;
   justify-content: center;
   padding: 20px;
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
 }
 
 .producto-card {
-  background: #222222;
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   padding: 20px;
-  width: 260px;
+  width: 280px;
   text-align: center;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  transition: var(--transition-smooth);
+  box-sizing: border-box;
 }
 
 .producto-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-8px);
+  border-color: var(--border-color-hover);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
 }
 
 .producto-card img {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 4px;
   object-fit: cover;
+  filter: grayscale(10%);
+  transition: var(--transition-fast);
+}
+
+.producto-card:hover img {
+  filter: grayscale(0%);
 }
 
 .producto-nombre {
-  font-weight: 700;
-  margin-top: 15px;
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 8px;
   font-size: 1.1rem;
-  font-family: 'Poppins', sans-serif;
-  color: #C9A66B;
+  color: var(--text-primary);
 }
 
 .producto-precio {
-  color: #C9A66B;
-  font-weight: bold;
-  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin: 0;
 }
 
-/* Hover interactivo */
+/* Hover interactivo del botón añadir */
 .imagen-hover {
   position: relative;
   cursor: pointer;
+  overflow: hidden;
+  border-radius: 4px;
 }
 
 .overlay-hover {
   position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #C9A66B;
-  color: #222;
-  padding: 6px 16px;
-  border-radius: 6px;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  padding: 12px;
   font-size: 0.9rem;
   font-weight: bold;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transform: translateY(100%);
+  transition: var(--transition-smooth);
+  box-sizing: border-box;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .imagen-hover:hover .overlay-hover {
   opacity: 1;
+  transform: translateY(0);
 }
 
-/* Animación de fade */
+/* ANIMACIONES */
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -1,13 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
-
 .footer-container {
-  background-color: #222222;
-  color: white;
-  padding: 60px 20px 30px;
-  font-family: 'Anton', sans-serif;
+  background-color: #0d0d0d;
+  color: var(--text-secondary);
+  padding: 80px 20px 40px;
+  font-family: var(--font-body);
   display: flex;
   flex-direction: column;
   align-items: center;
+  border-top: 1px solid var(--border-color);
 }
 
 .footer-grid {
@@ -16,57 +15,77 @@
   gap: 40px;
   width: 100%;
   max-width: 1200px;
-  margin-bottom: 40px;
+  margin-bottom: 60px;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .footer-logo {
-  font-size: 2rem;
-  color: #C9A66B;
-  margin-bottom: 10px;
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .footer-desc {
-  font-size: 1rem;
-  color: #ccc;
-  line-height: 1.4;
-  margin-top: 10px;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
 }
 
 .footer-links h4,
 .footer-contact h4,
-.footer-social h4 {
-  font-size: 1.2rem;
-  color: #C9A66B;
-  margin-bottom: 15px;
+.footer-social h4,
+.footer-horario h4 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .footer-links ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .footer-links ul li {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .footer-links a {
-  color: white;
+  color: var(--text-secondary);
   text-decoration: none;
-  font-size: 1rem;
-  transition: color 0.3s ease;
+  font-size: 0.95rem;
+  transition: var(--transition-fast);
 }
 
 .footer-links a:hover {
-  color: #C9A66B;
+  color: var(--text-primary);
+  padding-left: 4px;
 }
 
 .footer-contact p {
   font-size: 0.95rem;
-  color: #ccc;
-  margin-bottom: 10px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.footer-contact p svg {
+  color: var(--text-primary);
 }
 
 .footer-social .social-icons {
@@ -75,34 +94,40 @@
 }
 
 .footer-social a {
-  color: white;
+  color: var(--text-secondary);
   font-size: 1.3rem;
-  transition: color 0.3s ease;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
 }
 
 .footer-social a:hover {
-  color: #C9A66B;
-}
-
-.footer-bottom {
-  text-align: center;
-  font-size: 0.9rem;
-  color: #999;
-  border-top: 1px solid #333;
-  padding-top: 20px;
-  width: 100%;
-}
-
-.footer-horario h4 {
-  font-size: 1.2rem;
-  color: #C9A66B;
-  margin-bottom: 15px;
+  color: var(--bg-primary);
+  background-color: var(--text-primary);
+  border-color: var(--text-primary);
+  transform: translateY(-3px);
 }
 
 .footer-horario ul {
   list-style: none;
   padding: 0;
-  font-size: 1rem;
-  color: #ccc;
-  line-height: 1.5;
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.footer-bottom {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-color);
+  padding-top: 30px;
+  width: 100%;
+  max-width: 1200px;
 }

@@ -36,11 +36,13 @@ const Tienda = () => {
         style={{ backgroundImage: `url(${tiendaHeader})` }}
       >
         <div className="tienda-overlay-text">
-          <h1 className="tienda-text-main">NUESTROS PRODUCTOS</h1>
+          <p className="text-top animate-fade-in-up-1" style={{ marginBottom: '10px', color: '#a0a0a0', letterSpacing: '4px' }}>ESTILO EXCLUSIVO</p>
+          <h1 className="tienda-text-main animate-fade-in-up-2">NUESTROS PRODUCTOS</h1>
+          <p className="text-bottom animate-fade-in-up-3" style={{ marginTop: '10px', color: '#a0a0a0', fontSize: '1.1rem', letterSpacing: '2px' }}>PRENDAS URBANAS EDICIÓN LIMITADA</p>
         </div>
       </div>
 
-      <div className="descripcion-tienda">
+      <div className="descripcion-tienda reveal fade-up">
         <p>
           Explora nuestra colección de ropa urbana premium. Cada prenda ha sido
           diseñada con estilo y comodidad en mente, para que luzcas increíble en
@@ -54,8 +56,8 @@ const Tienda = () => {
       </div>
 
       <div className="productos-grid">
-        {productos.map((producto) => (
-          <div key={producto.id} className="producto-card">
+        {productos.map((producto, idx) => (
+          <div key={producto.id} className="producto-card reveal scale-in" style={{ transitionDelay: `${idx * 0.15}s` }}>
             <div className="imagen-hover" onClick={() => handleAgregar(producto)}>
               <img src={producto.imagen} alt={producto.nombre} />
               <div className="overlay-hover">🛒 Añadir al carrito</div>

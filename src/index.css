@@ -1,13 +1,112 @@
+:root {
+  --bg-primary: #0a0a0a;         /* Matte obsidian black */
+  --bg-secondary: #121212;       /* Sleek card dark gray */
+  --bg-tertiary: #1a1a1a;        /* Input and control background */
+  --text-primary: #ffffff;       /* Pure white for headings */
+  --text-secondary: #a0a0a0;     /* Elegant muted gray for body */
+  --text-muted: #666666;         /* Soft dark gray */
+  --border-color: rgba(255, 255, 255, 0.08); /* Fine white border */
+  --border-color-hover: rgba(255, 255, 255, 0.2);
+  --font-heading: 'Anton', 'Oswald', sans-serif;
+  --font-body: 'Poppins', 'Inter', sans-serif;
+  --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: all 0.2s ease;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Explicit monochrome text defaults to prevent browser-default black text */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+}
+
+p, span, li, label {
+  color: var(--text-secondary);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* 🚀 Scroll Reveal Animation System */
+.reveal {
+  opacity: 0;
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.reveal.fade-up {
+  transform: translateY(40px);
+}
+
+.reveal.fade-left {
+  transform: translateX(-45px);
+}
+
+.reveal.fade-right {
+  transform: translateX(45px);
+}
+
+.reveal.scale-in {
+  transform: scale(0.95);
+}
+
+/* Active states (triggered via IntersectionObserver) */
+.reveal.active {
+  opacity: 1;
+  transform: translateY(0) translateX(0) scale(1);
+}
+
+/* 🚀 Premium Staggered Fade-In-Up System */
+@keyframes globalFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up-1 {
+  opacity: 0;
+  animation: globalFadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.1s;
+}
+
+.animate-fade-in-up-2 {
+  opacity: 0;
+  animation: globalFadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.3s;
+}
+
+.animate-fade-in-up-3 {
+  opacity: 0;
+  animation: globalFadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.5s;
+}
+
+.animate-fade-in-up-4 {
+  opacity: 0;
+  animation: globalFadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.7s;
+}
+
+
+

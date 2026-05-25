@@ -27,23 +27,23 @@ const Servicio = () => {
     <>
       <div className="servicios-fullscreen">
         <div className="servicios-overlay-text">
-          <div className="text-top">EXPERIENCIA PREMIUM</div>
-          <h1 className="text-main">SERVICIOS</h1>
-          <p className="text-bottom">ENCUENTRA MÁS INFORMACIÓN DE NUESTROS SERVICIOS EXCLUSIVOS PARA TI</p>
+          <div className="text-top animate-fade-in-up-1">EXPERIENCIA PREMIUM</div>
+          <h1 className="text-main animate-fade-in-up-2">SERVICIOS</h1>
+          <p className="text-bottom animate-fade-in-up-3">ENCUENTRA MÁS INFORMACIÓN DE NUESTROS SERVICIOS EXCLUSIVOS PARA TI</p>
         </div>
       </div>
 
       <div className="servicios-gridy-section">
         <div className="image-grid">
           {imagenesConTexto.map((item, idx) => (
-            <div className="grid-img-container" key={idx}>
+            <div className="grid-img-container reveal scale-in" key={idx} style={{ transitionDelay: `${idx * 0.1}s` }}>
               <img src={item.img} alt={`cu${idx + 1}`} className="grid-img" />
               <div className="overlay-texto">{item.texto}</div>
             </div>
           ))}
         </div>
 
-        <div className="info-text">
+        <div className="info-text reveal fade-left">
           <h2 className="info-title">Vive una experiencia  única</h2>
           <p className="info-description">
             En nuestra barbería combinamos técnicas tradicionales con las últimas tendencias para ofrecerte un servicio completo y personalizado. <br /><br />

@@ -14,10 +14,10 @@ const Servicio = () => {
   return (
     <section className="section3-container">
       <div className="servicio-collage">
-        <h2 className="servicio-titulo">EXPLORA NUESTROS SERVICIOS</h2>
-        <p className="servicio-subtitulo">Manos expertas de todo un equipo de barberos</p>
+        <h2 className="servicio-titulo reveal fade-up">EXPLORA NUESTROS SERVICIOS</h2>
+        <p className="servicio-subtitulo reveal fade-up" style={{ transitionDelay: '0.2s' }}>Manos expertas de todo un equipo de barberos</p>
 
-        <div className="servicio-row">
+        <div className="servicio-row reveal scale-in" style={{ transitionDelay: '0.3s' }}>
           <div className="servicio-item">
             <img src={img1} alt="img1" className="servicio-img" />
             <div className="servicio-overlay-box">AFEITADO CON NAVAJA</div>
@@ -36,7 +36,7 @@ const Servicio = () => {
           </div>
         </div>
 
-        <div className="servicio-row">
+        <div className="servicio-row reveal scale-in" style={{ transitionDelay: '0.4s' }}>
           <div className="servicio-item">
             <img src={img5} alt="img5" className="servicio-img" />
             <div className="servicio-overlay-box">AFEITADO ROYAL</div>

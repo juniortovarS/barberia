@@ -4,13 +4,14 @@ import video4 from "../assets/video4.mp4";
 import video5 from "../assets/video5.mp4";
 import video6 from "../assets/video6.mp4";
 
+import Typewriter from "./Typewriter";
+
 const videos = [video4, video5, video6];
 
 const Section3 = () => {
   const sectionRef = useRef();
   const videoRefs = useRef([]);
   const [visible, setVisible] = useState(false);
-  const [canPlayWithAudio, setCanPlayWithAudio] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
  useEffect(() => {
@@ -44,15 +45,6 @@ const Section3 = () => {
 }, []);
 
   useEffect(() => {
-    const handleClick = () => {
-      setCanPlayWithAudio(true);
-      window.removeEventListener("click", handleClick);
-    };
-    window.addEventListener("click", handleClick);
-    return () => window.removeEventListener("click", handleClick);
-  }, []);
-
-  useEffect(() => {
     if (visible && videoRefs.current[0]) {
       const video = videoRefs.current[0];
       video.muted = true;
@@ -67,7 +59,7 @@ const Section3 = () => {
       if (video) {
         if (i === next) {
           video.currentTime = 0;
-          video.muted = !canPlayWithAudio;
+          video.muted = true;
           video.play().catch(() => {});
         } else {
           video.pause();
@@ -81,7 +73,7 @@ const Section3 = () => {
     videoRefs.current.forEach((video, i) => {
       if (video) {
         if (i === index) {
-          video.muted = !canPlayWithAudio;
+          video.muted = true;
           video.play().catch(() => {});
         } else {
           video.pause();
@@ -100,13 +92,10 @@ const Section3 = () => {
   return (
     <section ref={sectionRef} className={`section3-container ${visible ? "show" : ""}`}>
       {/* TEXTO A LA IZQUIERDA */}
-      <div className="section3-text">
-        <h2>Lo que comenzó con esfuerzo, hoy se transforma en excelencia.</h2>
-        <p>
-          Empezamos desde cero, con una silla, unas tijeras y el sueño de construir algo grande. Con esfuerzo,
-          dedicación y una pasión auténtica por el arte de la barbería, fuimos ganándonos la confianza de cada
-          cliente que cruzaba nuestra puerta. Hoy, ese pequeño puesto se ha transformado en una barbería completamente
-          remodelada, moderna y profesional, sin perder la esencia que nos vio nacer.
+      <div className="section3-text reveal fade-left">
+        <h2><Typewriter text="El arte del corte clásico y moderno en constante evolución." /></h2>
+        <p className="reveal fade-up" style={{ transitionDelay: '0.3s' }}>
+          Nuestro equipo de barberos profesionales combina años de experiencia con las técnicas más vanguardistas de la moda urbana. En cada degradado, afeitado clásico y perfilado, buscamos no solo la perfección técnica, sino una experiencia personalizada de cuidado y relajación. No cortamos cabello; esculpimos tu identidad.
         </p>
       </div>
 

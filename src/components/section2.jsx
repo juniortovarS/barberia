@@ -4,13 +4,14 @@ import video1 from "../assets/video1.mp4";
 import video2 from "../assets/video2.mp4";
 import video3 from "../assets/video3.mp4";
 
+import Typewriter from "./Typewriter";
+
 const videos = [video1, video2, video3];
 
 const Section2 = () => {
   const sectionRef = useRef();
   const videoRefs = useRef([]);
   const [visible, setVisible] = useState(false);
-  const [canPlayWithAudio, setCanPlayWithAudio] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Detectar visibilidad y pausar si se oculta
@@ -42,16 +43,6 @@ const Section2 = () => {
     };
   }, []);
 
-  // Activar audio después del primer clic del usuario
-  useEffect(() => {
-    const handleClick = () => {
-      setCanPlayWithAudio(true);
-      window.removeEventListener("click", handleClick);
-    };
-    window.addEventListener("click", handleClick);
-    return () => window.removeEventListener("click", handleClick);
-  }, []);
-
   // Reproducir automáticamente el primer video al entrar
   useEffect(() => {
     if (visible && videoRefs.current[0]) {
@@ -70,7 +61,7 @@ const Section2 = () => {
       if (video) {
         if (i === next) {
           video.currentTime = 0;
-          video.muted = !canPlayWithAudio;
+          video.muted = true;
           video.play().catch(() => {});
         } else {
           video.pause();
@@ -86,7 +77,7 @@ const Section2 = () => {
     videoRefs.current.forEach((video, i) => {
       if (video) {
         if (i === index) {
-          video.muted = !canPlayWithAudio;
+          video.muted = true;
           video.play().catch(() => {});
         } else {
           video.pause();
@@ -128,9 +119,9 @@ const Section2 = () => {
         ))}
       </div>
 
-       <div className="section2-text">
-  <h2>Lo que comenzó con esfuerzo, hoy se transforma en excelencia.</h2>
-  <p>
+       <div className="section2-text reveal fade-right">
+  <h2><Typewriter text="Lo que comenzó con esfuerzo, hoy se transforma en excelencia." /></h2>
+  <p className="reveal fade-up" style={{ transitionDelay: '0.3s' }}>
     Empezamos desde cero, con una silla, unas tijeras y el sueño de construir algo grande. Con esfuerzo, dedicación y una pasión auténtica por el arte de la barbería, fuimos ganándonos la confianza de cada cliente que cruzaba nuestra puerta. Hoy, ese pequeño puesto se ha transformado en una barbería completamente remodelada, moderna y profesional, sin perder la esencia que nos vio nacer.
   </p>
 </div>

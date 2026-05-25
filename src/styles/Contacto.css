@@ -1,43 +1,93 @@
 .contacto-container {
   min-height: 100vh;
-  padding: 80px 20px;
-  background-color: #222222;
-  color: white;
+  padding: 120px 20px 80px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   text-align: center;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
+  box-sizing: border-box;
+}
+
+.contacto-titulo {
+  font-family: var(--font-heading);
+  font-size: 3rem;
+  color: var(--text-primary);
+  margin-bottom: 40px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .contacto-form {
-  max-width: 600px;
+  max-width: 500px;
   margin: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  background-color: var(--bg-secondary);
+  padding: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
 
 .contacto-form input,
 .contacto-form textarea {
   padding: 14px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 8px;
-  background-color: #333;
-  color: white;
+  font-size: 0.95rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
   resize: none;
+  font-family: var(--font-body);
+  transition: var(--transition-fast);
+}
+
+.contacto-form input:focus,
+.contacto-form textarea:focus {
+  outline: none;
+  border-color: var(--border-color-hover);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
 }
 
 .contacto-form button {
-  padding: 12px;
-  font-size: 1.1rem;
-  background-color: #C9A66B;
-  border: none;
-  color: black;
-  font-weight: bold;
+  padding: 14px;
+  font-size: 0.95rem;
+  background-color: var(--text-primary);
+  border: 1px solid var(--text-primary);
+  color: var(--bg-primary);
+  font-weight: 600;
   cursor: pointer;
-  border-radius: 8px;
-  transition: background-color 0.3s ease;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: var(--transition-fast);
 }
 
 .contacto-form button:hover {
-  background-color: #a78552;
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+.contacto-exito {
+  margin-top: 20px;
+  color: #28a745;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.contacto-error {
+  margin-top: 20px;
+  color: #dc3545;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 576px) {
+  .contacto-form {
+    padding: 24px;
+  }
+  .contacto-titulo {
+    font-size: 2.2rem;
+  }
 }

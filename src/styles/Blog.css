@@ -1,12 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;600&display=swap');
-
 /* ======== BASE GLOBAL ======== */
 body {
   margin: 0;
   padding: 0;
-  background-color: #222222;
-  color: white;
-  font-family: 'Poppins', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
   overflow-x: hidden;
 }
 
@@ -26,6 +24,7 @@ body {
   height: 100%;
   object-fit: cover;
   z-index: 0;
+  filter: grayscale(80%) brightness(0.4);
   backface-visibility: hidden;
   transform: translateZ(0);
   will-change: transform, opacity;
@@ -39,20 +38,26 @@ body {
   transform: translate(-50%, -50%);
   text-align: center;
   z-index: 1;
-  font-family: 'Anton', sans-serif;
-  color: #C9A66B;
-  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6);
+  font-family: var(--font-heading);
+  color: var(--text-primary);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
 }
 
 .blog-title {
-  font-size: 4rem;
+  font-size: 5rem;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .blog-subtitle {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   margin-top: 16px;
-  font-family: 'Anton', sans-serif;
+  font-family: var(--font-body);
+  font-weight: 300;
+  letter-spacing: 4px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
 }
 
 /* ======== SECCIONES DE BLOG ======== */
@@ -60,54 +65,54 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #222222;
-  padding: 100px 40px;
-  gap: 40px;
+  background-color: var(--bg-primary);
+  padding: 120px 40px;
+  gap: 48px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .blog-img {
   width: 100%;
   max-width: 900px;
   object-fit: cover;
-  border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-  transition: transform 0.3s ease;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  filter: grayscale(50%);
+  transition: var(--transition-smooth);
 }
 
 .blog-img:hover {
-  transform: scale(1.01);
+  transform: scale(1.02);
+  filter: grayscale(0%);
+  border-color: var(--border-color-hover);
 }
 
 .blog-text {
-  max-width: 1000px;
+  max-width: 900px;
   width: 100%;
-  text-align: justify; /* 👈 Hace que el texto llene bien el ancho */
-  padding: 0 40px;
+  text-align: justify;
+  padding: 0;
 }
-
 
 /* ======== TÍTULOS Y PÁRRAFOS ======== */
 .info-title {
-  font-family: 'Anton', sans-serif;
-  font-size: 2.8rem;
-  color: #C9A66B;
+  font-family: var(--font-heading);
+  font-size: 3rem;
+  color: var(--text-primary);
+  margin-top: 0;
   margin-bottom: 24px;
-  text-decoration: none; /* ✅ QUITA SUBRAYADO */
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .info-description {
-  font-size: 1.2rem;
-  color: #ccc;
+  font-size: 1.05rem;
+  color: var(--text-secondary);
   line-height: 1.8;
-  text-align: justify;     /* ✅ Justifica como párrafo normal */
-  margin: 0 auto 24px auto; /* ✅ Centra el bloque horizontalmente */
-  max-width: 900px;         /* ✅ Ancho máximo amplio */
-  width: 100%;
-  padding: 0 20px;          /* ✅ Espaciado interno */
-  text-decoration: none;
+  text-align: justify;
+  margin-bottom: 24px;
 }
-
-
 
 /* ======== RESPONSIVE ======== */
 @media (max-width: 768px) {
@@ -116,22 +121,15 @@ body {
   }
 
   .blog-subtitle {
-    font-size: 1.2rem;
+    font-size: 1rem;
+    letter-spacing: 2px;
   }
 
   .info-title {
-    font-size: 2rem;
-  }
-
-  .info-description {
-    font-size: 1rem;
+    font-size: 2.2rem;
   }
 
   .blog-section {
-    padding: 60px 20px;
-  }
-
-  .blog-img {
-    border-radius: 8px;
+    padding: 80px 20px;
   }
 }

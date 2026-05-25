@@ -1,15 +1,8 @@
-body, html {
-  overflow: auto;
-  font-family: 'Poppins', sans-serif;
-  background-color: #000;
-  margin: 0;
-  padding: 0;
-}
+/* ==========================================
+   CITA SECTION - PREMIUM BLACK & WHITE STYLE
+   Theme: Matte Black, Dark Gray, Pure White
+   ========================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
-
-/* Fondo principal */
 .cita-fullscreen {
   height: 100vh;
   width: 100%;
@@ -20,7 +13,16 @@ body, html {
   background-position: center;
 }
 
-/* Texto promocional */
+/* Dark backdrop overlay with slight radial gradient */
+.cita-fullscreen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(10, 10, 10, 0.6) 0%, rgba(5, 5, 5, 0.85) 100%);
+  z-index: 1;
+}
+
+/* Hero Content */
 .cita-overlay-text {
   position: absolute;
   top: 50%;
@@ -28,199 +30,852 @@ body, html {
   transform: translate(-50%, -50%);
   text-align: center;
   z-index: 10;
-  font-family: 'Anton', sans-serif;
+  font-family: var(--font-heading);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
   padding: 0 20px;
-  animation: fadeIn 0.3s ease-out forwards;
+  width: 90%;
+  max-width: 800px;
+  animation: heroFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .cita-text-top {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: #C9A66B;
-  animation: fadeInUp 0.3s ease-out forwards;
+  font-size: 1.1rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  letter-spacing: 5px;
+  color: #ffffff; /* White */
+  text-transform: uppercase;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+  opacity: 0.8;
 }
 
 .cita-text-main {
   font-size: 3.5rem;
   font-weight: 800;
-  color: #C9A66B;
+  color: var(--text-primary);
   margin: 0;
-  animation: fadeInUp 0.4s ease-out forwards;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
 }
 
-.cita-text-bottom {
-  font-size: 1.2rem;
-  color: #C9A66B;
-  text-align: center;
-  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
-}
-
-/* Botón principal */
+/* Interactive Call to Action Button - White Border */
 .cita-button {
   display: flex;
-  border: 2px solid #C9A66B;
+  align-items: center;
+  border: 1px solid #ffffff;
   cursor: pointer;
-  animation: fadeInUp 0.5s ease-out forwards;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(10, 10, 10, 0.5);
+  backdrop-filter: blur(5px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.cita-button:hover {
+  background-color: #ffffff;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
 }
 
 .cita-btn-text {
-  padding: 12px 24px;
-  font-size: 1rem;
-  color: #C9A66B;
-  font-family: 'Anton', sans-serif;
-  background: transparent;
+  padding: 16px 32px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.cita-button:hover .cita-btn-text {
+  color: #000000;
+  font-weight: 700;
 }
 
 .cita-btn-icon {
-  padding: 12px;
-  background: #C9A66B;
-  color: black;
+  padding: 16px 22px;
+  background: #ffffff;
+  color: #000000;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
 }
 
-/* Animaciones */
-@keyframes fadeIn { to { opacity: 1; } }
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.cita-button:hover .cita-btn-icon {
+  background: #111111;
+  color: #ffffff;
 }
 
-/* Formulario */
+/* Wizard Overlay Background */
 .cita-formulario-overlay {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(5, 5, 5, 0.82);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 1000;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 20px;
+  box-sizing: border-box;
+  animation: fadeIn 0.4s ease-out forwards;
 }
 
-.cita-formulario-contenido {
-  background: #111;
-  padding: 30px;
-  border-radius: 12px;
-  color: white;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.6);
-  text-align: center;
-}
-
-.cita-formulario-contenido h2 {
-  color: #C9A66B;
-  font-family: 'Anton', sans-serif;
-  margin-bottom: 20px;
-}
-
-.cita-formulario-contenido input,
-.cita-formulario-contenido select {
+/* Glassmorphism Wizard Container */
+.wizard-box {
+  background: rgba(18, 18, 18, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  padding: 40px 35px !important;
+  border-radius: 24px !important;
+  color: var(--text-primary);
   width: 100%;
-  padding: 12px;
-  margin-top: 15px;
-  background-color: #222;
-  border: 1px solid #444;
-  border-radius: 6px;
-  color: white;
+  max-width: 550px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 255, 255, 0.03);
+  box-sizing: border-box;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.wizard-box::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Progress indicator bar */
+.wizard-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  position: relative;
+  width: 100%;
+  z-index: 1;
+}
+
+.wizard-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+}
+
+.step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #141414;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.step-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.4s ease;
+}
+
+.wizard-step.active .step-num {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #000000;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.25);
+}
+
+.wizard-step.active .step-label {
+  color: #ffffff;
+}
+
+.wizard-step.current .step-num {
+  border-color: #ffffff;
+  color: #ffffff;
+  background: transparent;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.wizard-line {
+  flex-grow: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 -10px;
+  margin-top: -24px; /* Align with circles */
+  transition: all 0.4s ease;
+  z-index: 1;
+}
+
+.wizard-line.active {
+  background: #ffffff;
+}
+
+.wizard-title {
+  font-family: var(--font-heading);
+  font-size: 1.7rem !important;
+  color: #ffffff;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 1;
+}
+
+.wizard-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 25px;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+}
+
+.wizard-form {
+  position: relative;
+  z-index: 1;
+}
+
+/* Modern inputs with icons and floating effects */
+.input-group-modern {
+  position: relative;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.input-icon-modern {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  color: #888888;
   font-size: 1rem;
+  transition: color 0.3s ease;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  height: 52px;
 }
 
-/* Botones del formulario */
-.cita-formulario-contenido button {
-  margin-top: 20px;
-  padding: 12px 30px;
-  font-size: 16px;
-  border: none;
-  border-radius: 6px;
-  background-color: #C9A66B;
-  color: black;
-  font-weight: bold;
+.input-group-modern input {
+  flex: 1;
+  height: 52px;
+  border: none !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  padding: 0 16px !important;
+  font-family: var(--font-body);
+  font-size: 0.95rem !important;
+  box-sizing: border-box;
+}
+
+.input-group-modern input:focus {
+  outline: none !important;
+}
+
+.input-focus-border {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.input-group-modern:focus-within {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.input-group-modern:focus-within .input-icon-modern {
+  color: #ffffff;
+}
+
+.input-group-modern:focus-within .input-focus-border {
+  width: 100%;
+}
+
+/* Wizard Buttons */
+.wizard-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.wizard-buttons button {
+  padding: 14px 28px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-radius: 10px !important;
   cursor: pointer;
-  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
-.cita-formulario-contenido button:hover {
-  opacity: 0.9;
+.siguiente-btn {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff !important;
+  flex-grow: 1.5;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
 }
 
-.cerrar-btn {
-  background-color: transparent;
-  color: #ccc;
-  border: 1px solid #ccc;
-  margin-left: 10px;
+.siguiente-btn:hover {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
 }
 
-/* Fecha y hora */
-.desplegable {
+.siguiente-btn.disabled {
+  opacity: 0.25 !important;
+  pointer-events: none;
+}
+
+.cerrar-btn-wizard {
+  background-color: transparent !important;
+  color: #a0a0a0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  width: 35%;
+}
+
+.cerrar-btn-wizard:hover {
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+.atras-btn {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  flex-grow: 1;
+}
+
+.atras-btn:hover {
+  border-color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.confirmar-btn-wizard {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff !important;
+  flex-grow: 2;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
+}
+
+.confirmar-btn-wizard:hover {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
+}
+
+.confirmar-btn-wizard.disabled {
+  opacity: 0.25 !important;
+  pointer-events: none;
+}
+
+/* Elegant Calendar Styling */
+.calendar-container {
+  display: flex;
+  justify-content: center;
+  margin: 15px 0;
+}
+
+.calendar-wrapper-modern {
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+/* Selection Alerts / Pills - Black & White */
+.seleccion-alert {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-size: 0.9rem;
   margin: 20px 0;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.seleccion-alert strong {
+  color: #ffffff;
+  margin-left: 4px;
+}
+
+.date-pill {
+  border-left: 3px solid #ffffff;
+}
+
+.time-pill {
+  border-left: 3px solid #ffffff;
+}
+
+/* Interactive Time Slots divided by Turnos */
+.turnos-container-modern {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 5px;
+  margin: 15px 0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 15px;
+}
+
+.turno-seccion-modern {
+  margin-bottom: 20px;
   text-align: left;
 }
 
-.desplegable label {
-  font-weight: bold;
-  color: #C9A66B;
-  cursor: pointer;
-  margin-bottom: 6px;
-  font-size: 1rem;
-  display: block;
+.turno-seccion-modern:last-child {
+  margin-bottom: 0;
 }
 
-.seleccion-resumen {
-  background-color: #222;
-  color: #fff;
-  padding: 10px;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  border: 1px solid #C9A66B;
-  margin-bottom: 10px;
-}
-
-/* Horas disponibles */
-.horas-grid {
+.turno-titulo-modern {
+  font-size: 0.85rem;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 10px 5px;
+  font-weight: 600;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  max-height: 220px;
-  overflow-y: auto;
-  background: transparent;       /* ✅ Fondo transparente */
-  padding: 0;                    /* ✅ Sin relleno */
-  border: none;                 /* ✅ Sin borde */
-  border-radius: 0;             /* ✅ Sin bordes redondeados */
+  align-items: center;
+  gap: 6px;
+  opacity: 0.9;
 }
 
+.horas-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
 
-.hora-btn {
-  padding: 10px 16px;
-  background-color: #333;
-  color: white;
-  border: none;
-  border-radius: 8px;
+.hora-btn-modern {
+  padding: 12px 6px !important;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  color: #a0a0a0;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 8px !important;
   cursor: pointer;
-  transition: background 0.2s ease;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.hora-btn:hover {
-  background-color: #555;
+.hora-btn-modern:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff;
+  border-color: #ffffff !important;
+  transform: scale(1.05);
 }
 
-.hora-btn.active {
-  background-color: #C9A66B;
-  color: black;
-  font-weight: bold;
+.hora-btn-modern.active {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
 }
 
-.hora-btn.disabled {
-  opacity: 0.3;
+.hora-btn-modern.disabled {
+  opacity: 0.12 !important;
   pointer-events: none;
-  background-color: #444;
-  color: #888;
-  cursor: not-allowed;
+  background-color: transparent !important;
+  color: #444444;
+  border-color: transparent !important;
+}
+
+/* React Datepicker Custom Dark White Theme */
+.react-datepicker {
+  background-color: #121212 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+  font-family: var(--font-body) !important;
+  border-radius: 12px !important;
+  padding: 10px;
+}
+
+.react-datepicker__header {
+  background-color: #121212 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.react-datepicker__day-name {
+  color: #ffffff !important;
+  opacity: 0.6;
+}
+
+.react-datepicker__day {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  border-radius: 6px !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.react-datepicker__day--selected {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+.react-datepicker__day--disabled {
+  color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Error Message */
+.cita-error-modern {
+  color: #ff5252;
+  font-size: 0.85rem;
+  margin-top: 15px;
+  font-weight: 500;
+  text-align: center;
+  animation: shake 0.3s ease-in-out;
+}
+
+/* ------------------------------------------
+   CONFIRMATION SCREEN (SUCCESS MODAL)
+   ------------------------------------------ */
+
+.confirmacion-box {
+  background: rgba(15, 15, 15, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  padding: 40px 35px !important;
+  border-radius: 28px !important;
+  color: var(--text-primary);
+  width: 95%;
+  max-width: 500px;
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(255, 255, 255, 0.04);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* SVG Success Checkmark Animation - White theme */
+.confirmacion-success-animation {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+}
+
+.checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 2;
+  stroke: #ffffff;
+  stroke-miterlimit: 10;
+  box-shadow: inset 0px 0px 0px #ffffff;
+  animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+}
+
+.checkmark__circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 2;
+  stroke-miterlimit: 10;
+  stroke: #ffffff;
+  fill: none;
+  animation: stroke .6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark__check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke: #000000;
+  animation: stroke .3s cubic-bezier(0.65, 0, 0.45, 1) .8s forwards;
+}
+
+@keyframes stroke {
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes fill {
+  100% { box-shadow: inset 0px 0px 0px 40px #ffffff; }
+}
+
+/* Confirmation Summary Card */
+.confirmacion-resumen-box {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 22px;
+  text-align: left;
+  margin-bottom: 25px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.resumen-item {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding-bottom: 8px;
+}
+
+.resumen-item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.resumen-item span:first-child {
+  font-weight: 500;
+  color: #a0a0a0;
+}
+
+.resumen-item span:last-child {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Confirmation Action buttons */
+.confirmacion-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.whatsapp-confirm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 15px;
+  font-weight: 700;
+  background-color: #25d366; /* Keep standard green WhatsApp color or white if preferred. Green is highly recognizable and standard, but we can make it dark/white if requested. We will keep standard green for brand recognition but styled elegantly. */
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.25);
+  box-sizing: border-box;
+}
+
+.whatsapp-confirm-btn:hover {
+  background-color: #20ba59;
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+  transform: translateY(-2px);
+}
+
+.confirmacion-cerrar-btn {
+  width: 100%;
+  padding: 15px !important;
+  font-weight: 700 !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 10px !important;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.confirmacion-cerrar-btn:hover {
+  border-color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Button Loading Spinner */
+.loading-spinner-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.spinner-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #000000;
+  border-radius: 50%;
+  animation: dotPulse 1.2s infinite ease-in-out both;
+}
+
+.spinner-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.spinner-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Scrollbar customization for hours list */
+.turnos-container-modern::-webkit-scrollbar {
+  width: 6px;
+}
+
+.turnos-container-modern::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 4px;
+}
+
+.turnos-container-modern::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.turnos-container-modern::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Keyframes and Animations */
+@keyframes heroFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale {
+  0% { transform: scale3d(1, 1, 1); }
+  50% { transform: scale3d(1.1, 1.1, 1); }
+  100% { transform: scale3d(1, 1, 1); }
+}
+
+/* Step content transitions */
+.fade-in-slide {
+  animation: fadeInSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-scale {
+  animation: fadeInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* Responsive Tweaks */
+@media (max-width: 580px) {
+  .wizard-box {
+    padding: 30px 20px !important;
+  }
+  .horas-grid-modern {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .cita-text-main {
+    font-size: 2.3rem;
+  }
+  .confirmacion-box {
+    padding: 30px 20px !important;
+  }
 }

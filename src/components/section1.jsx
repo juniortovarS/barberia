@@ -42,16 +42,16 @@ const Section1 = () => {
         ))}
       </div>
       {/* Texto con aparición progresiva */}
-<div key={index} className="section1-overlay-text fade-in-text">
-  <p className="text-top">NUEVO CONCEPTO EN BARBERÍAS</p>
-  <h1 className="text-main">TU ESTILO COMIENZA AQUÍ</h1>
-  <p className="text-bottom">¡Visítanos en cualquiera de nuestras 5 sedes a nivel nacional!</p>
+      <div key={index} className="section1-overlay-text">
+        <p className="text-top animate-fade-in-up-1">NUEVO CONCEPTO EN BARBERÍAS</p>
+        <h1 className="text-main animate-fade-in-up-2">TU ESTILO COMIENZA AQUÍ</h1>
+        <p className="text-bottom animate-fade-in-up-3">¡Visítanos en cualquiera de nuestras 5 sedes a nivel nacional!</p>
 
-  <div className="section1-button">
-    <span className="btn-text">Reserva aquí</span>
-    <span className="btn-icon">↗</span>
-  </div>
-</div>
+        <div className="section1-button animate-fade-in-up-4">
+          <span className="btn-text">Reserva aquí</span>
+          <span className="btn-icon">↗</span>
+        </div>
+      </div>
 
     </section>
   );

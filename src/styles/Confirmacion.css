@@ -1,57 +1,106 @@
 .confirmacion-container {
-  padding: 40px;
+  padding: 120px 20px 80px;
   text-align: center;
-  font-family: 'Arial', sans-serif;
-  color: #333;
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .confirmacion-container h1 {
-  font-size: 2rem;
-  color: #28a745;
+  font-family: var(--font-heading);
+  font-size: 3rem;
+  color: #28a745; /* Clean emerald green for success accent */
+  margin-top: 0;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.confirmacion-container p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: 40px;
 }
 
 .resumen-compra {
-  background-color: #f9f9f9;
-  padding: 20px;
-  margin: 30px auto;
-  border-radius: 10px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 40px;
+  margin: 0 auto 40px;
+  border-radius: 8px;
   max-width: 500px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+  text-align: left;
 }
 
 .resumen-compra h2 {
-  margin-bottom: 15px;
-  color: #555;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.3rem;
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
 }
 
 .resumen-compra ul {
   list-style: none;
   padding: 0;
-  text-align: left;
+  margin: 0;
 }
 
 .resumen-compra li {
-  margin-bottom: 8px;
-  font-size: 1rem;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+
+.resumen-compra li strong {
+  color: var(--text-primary);
 }
 
 .resumen-compra .total {
-  margin-top: 12px;
-  font-weight: bold;
-  color: #000;
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary) !important;
 }
 
 .btn-volver {
   display: inline-block;
-  margin-top: 20px;
-  background-color: #222;
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: 6px;
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border: 1px solid var(--text-primary);
+  padding: 14px 28px;
+  border-radius: 4px;
   text-decoration: none;
-  transition: background 0.3s ease;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: var(--transition-fast);
 }
 
 .btn-volver:hover {
-  background-color: #444;
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+@media (max-width: 576px) {
+  .confirmacion-container h1 {
+    font-size: 2.2rem;
+  }
+  .resumen-compra {
+    padding: 24px;
+  }
 }

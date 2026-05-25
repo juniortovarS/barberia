@@ -1,5 +1,5 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Section1 from "./components/section1";
@@ -22,7 +22,45 @@ import Confirmacion from "./pages/Confirmacion";
 
 import { CarritoProvider } from "./components/CarritoContext";
 
+// Import assets to preload
+import citaBg from "./assets/cita.png";
+import serviciosBg from "./assets/imgSer.png";
+import studio1 from "./assets/studio1.png";
+import studio2 from "./assets/studio2.png";
+import studio3 from "./assets/studio3.png";
+
 function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // 🚀 Background Preloading of large images to eliminate lag on page changes
+    const imagesToPreload = [citaBg, serviciosBg, studio1, studio2, studio3];
+    imagesToPreload.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
+  useEffect(() => {
+    // 🚀 Re-bind scroll reveal elements whenever route changes
+    const revealElements = document.querySelectorAll(".reveal");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("active");
+          } else {
+            entry.target.classList.remove("active");
+          }
+        });
+      },
+      { threshold: 0.05 }
+    );
+    
+    revealElements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [location]);
   return (
     <CarritoProvider>
       <Navbar />

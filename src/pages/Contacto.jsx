@@ -53,8 +53,12 @@ const Contacto = () => {
   return (
     <>
       <div className="contacto-container">
-        <h2 className="contacto-titulo">Contáctanos</h2>
-        <form ref={form} onSubmit={sendEmail} className="contacto-form">
+        <p className="text-top animate-fade-in-up-1" style={{ letterSpacing: '4px', marginBottom: '10px', textTransform: 'uppercase' }}>PONTE EN CONTACTO</p>
+        <h2 className="contacto-titulo animate-fade-in-up-2">Contáctanos</h2>
+        <p className="text-bottom animate-fade-in-up-3" style={{ maxWidth: '600px', margin: '0 auto 40px', color: '#a0a0a0', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.95rem' }}>
+          ¿Tienes preguntas o quieres agendar personalmente? Escríbenos y te responderemos a la brevedad.
+        </p>
+        <form ref={form} onSubmit={sendEmail} className="contacto-form animate-fade-in-up-4">
           <input type="text"  name="name"    placeholder="Tu nombre"   required />
           <input type="email" name="email"   placeholder="Tu correo"   required />
           <input type="tel"   name="phone"   placeholder="Tu celular"  required />
