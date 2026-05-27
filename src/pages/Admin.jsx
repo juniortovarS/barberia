@@ -27,7 +27,7 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'citas', 'clientes', 'agendar'
   
   // Filtros de Citas
-  const [filtroEstado, setFiltroEstado] = useState('all'); // 'all', 'pending', 'approved', 'cancelled'
+  const [filtroEstado, setFiltroEstado] = useState('pending'); // 'all', 'pending', 'approved', 'cancelled'
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modales y Detalles
@@ -462,9 +462,12 @@ Estado:       ${clientEstado.toUpperCase()}
         </button>
         <button 
           className={`tab-nav-btn ${activeTab === 'citas' ? 'active' : ''}`}
-          onClick={() => setActiveTab('citas')}
+          onClick={() => { setActiveTab('citas'); setFiltroEstado('pending'); }}
         >
           <FaCalendarAlt /> Listado de Citas
+          {pendingReservas.length > 0 && (
+            <span className="tab-pending-badge">{pendingReservas.length}</span>
+          )}
         </button>
         <button 
           className={`tab-nav-btn ${activeTab === 'clientes' ? 'active' : ''}`}

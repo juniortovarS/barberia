@@ -112,6 +112,27 @@
   box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
 }
 
+.tab-pending-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e53e3e;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 20px;
+  padding: 0 5px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.tab-nav-btn.active .tab-pending-badge {
+  background: #c53030;
+  color: #ffffff;
+}
+
 /* Animation wrapper for tabs content */
 .admin-tab-content {
   display: none;
