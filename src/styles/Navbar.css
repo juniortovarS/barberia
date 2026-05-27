@@ -471,6 +471,8 @@
   top: 75px;
   right: 80px;
   width: 330px;
+  max-height: 580px; /* ✅ Evita desbordamiento con listado de reservas */
+  overflow-y: auto; /* ✅ Scroll estético interno */
   background-color: rgba(18, 18, 18, 0.95);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -484,6 +486,17 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   animation: authFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  scrollbar-width: thin; /* Barra de desplazamiento fina para Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Scrollbar estética para Chrome/Safari */
+.auth-popup-navbar::-webkit-scrollbar {
+  width: 4px;
+}
+.auth-popup-navbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
 @keyframes authFadeIn {
@@ -493,7 +506,7 @@
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none; /* ✅ ELIMINA EL TRANSFORM PARA EVITAR RENDERIZADO BORROSO */
   }
 }
 
@@ -918,12 +931,13 @@
 }
 
 .profile-subtitle {
-  font-size: 0.65rem;
-  color: #666666;
+  font-size: 0.78rem;
+  color: #888888;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   font-weight: 700;
   margin-top: 4px;
+  backface-visibility: hidden;
 }
 
 /* User Card Details */
@@ -1036,5 +1050,150 @@
   color: #ffffff;
   border-color: #ff4a4a;
   box-shadow: 0 4px 12px rgba(255, 74, 74, 0.15);
+}
+
+/* ============================================
+   📅 CLIENT BOOKINGS PANEL (TUS RESERVAS UI)
+   ============================================ */
+
+.user-profile-bookings {
+  margin-top: 8px;
+  text-align: left;
+  border-top: 1px solid var(--border-color);
+  padding-top: 18px;
+}
+
+.bookings-section-title {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  letter-spacing: 0.5px;
+}
+
+.bookings-loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.no-bookings-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 12px 0;
+  font-style: italic;
+}
+
+.user-bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.user-booking-card {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: var(--transition-fast);
+}
+
+.user-booking-card:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-color-hover);
+}
+
+.booking-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.booking-card-date {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.booking-card-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.booking-card-status.approved {
+  background-color: rgba(0, 230, 118, 0.1);
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.25);
+}
+
+.booking-card-status.cancelled {
+  background-color: rgba(255, 74, 74, 0.1);
+  color: #ff4a4a;
+  border: 1px solid rgba(255, 74, 74, 0.25);
+}
+
+.booking-card-status.pending {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.booking-card-mid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.booking-card-time {
+  font-weight: 500;
+}
+
+.booking-card-code {
+  font-family: monospace;
+  font-size: 0.72rem;
+  background-color: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: #cccccc;
+}
+
+.btn-cancel-booking-inline {
+  background: transparent;
+  color: #ff4a4a;
+  border: 1px solid rgba(255, 74, 74, 0.25);
+  border-radius: 4px;
+  padding: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: var(--transition-fast);
+  width: 100%;
+}
+
+.btn-cancel-booking-inline:hover {
+  background-color: #ff4a4a;
+  color: #ffffff;
+  border-color: #ff4a4a;
+  box-shadow: 0 2px 8px rgba(255, 74, 74, 0.25);
 }
 

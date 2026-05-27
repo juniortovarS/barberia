@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles/Navbar.css";
 import logonav from "../assets/logonav.png";
@@ -24,6 +24,10 @@ const Navbar = () => {
   // Estados para la recuperación de contraseña (Simplificado)
   const [resetEmail, setResetEmail] = useState("");
   const [resetNewPassword, setResetNewPassword] = useState("");
+
+  // Estados de Reservas del Usuario
+  const [misReservas, setMisReservas] = useState([]);
+  const [loadingReservas, setLoadingReservas] = useState(false);
 
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
@@ -51,12 +55,52 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const fetchMisReservas = useCallback(async () => {
+    if (!user) return;
+    setLoadingReservas(true);
+    try {
+      const { data, error } = await supabase
+        .from("reservas")
+        .select("*")
+        .eq("email", user.email)
+        .order("fecha_registro", { ascending: false });
+      if (error) throw error;
+      setMisReservas(data || []);
+    } catch (err) {
+      console.error("Error al cargar tus reservas:", err);
+    } finally {
+      setLoadingReservas(false);
+    }
+  }, [user]);
+
+  const handleCancelarReserva = async (id) => {
+    if (!window.confirm("¿Estás seguro de que deseas cancelar esta reserva?")) return;
+    try {
+      const { error } = await supabase
+        .from("reservas")
+        .update({ estado: 'cancelled' })
+        .eq("id", id);
+      if (error) throw error;
+      
+      setMisReservas(prev => prev.map(r => r.id === id ? { ...r, estado: 'cancelled' } : r));
+    } catch (err) {
+      console.error("Error al cancelar la reserva:", err);
+      alert("No se pudo cancelar la reserva.");
+    }
+  };
+
   useEffect(() => {
     setMostrarCarrito(false);
     setMostrarAuth(false);
     setMenuOpen(false);
     setIsResettingPassword(false); // Resetear modo restablecer al cambiar de página
   }, [location.pathname, setMostrarCarrito]);
+
+  useEffect(() => {
+    if (mostrarAuth && user) {
+      fetchMisReservas();
+    }
+  }, [mostrarAuth, user, fetchMisReservas]);
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
@@ -361,7 +405,7 @@ const Navbar = () => {
               <div className="user-profile-card">
                 <div className="profile-card-section">
                   <span className="profile-card-label">Correo Electrónico</span>
-                  <span className="profile-card-value">{user.email}</span>
+                  <span className="profile-card-value" style={{ textTransform: 'none' }}>{user.email}</span>
                 </div>
 
                 <div className="profile-card-section">
@@ -372,6 +416,47 @@ const Navbar = () => {
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* ✅ LISTADO DE RESERVAS DEL CLIENTE */}
+              <div className="user-profile-bookings">
+                <h5 className="bookings-section-title">📅 Tus Reservas</h5>
+                {loadingReservas ? (
+                  <div className="bookings-loading-box">
+                    <div className="auth-spinner"></div>
+                    <span>Cargando citas...</span>
+                  </div>
+                ) : misReservas.length === 0 ? (
+                  <p className="no-bookings-text">No tienes citas registradas.</p>
+                ) : (
+                  <div className="user-bookings-list">
+                    {misReservas.map((res) => (
+                      <div key={res.id} className="user-booking-card">
+                        <div className="booking-card-top">
+                          <span className="booking-card-date">📅 {res.fecha_cita}</span>
+                          <span className={`booking-card-status ${res.estado || 'pending'}`}>
+                            {res.estado === 'approved' && 'Confirmado'}
+                            {res.estado === 'cancelled' && 'Cancelado'}
+                            {(res.estado === 'pending' || !res.estado) && 'Pendiente'}
+                          </span>
+                        </div>
+                        <div className="booking-card-mid">
+                          <span className="booking-card-time">⏰ {res.hora_cita}</span>
+                          <span className="booking-card-code">Cod: {res.codigo || 'S/C'}</span>
+                        </div>
+                        {res.estado !== 'cancelled' && (
+                          <button
+                            type="button"
+                            className="btn-cancel-booking-inline"
+                            onClick={() => handleCancelarReserva(res.id)}
+                          >
+                            Cancelar Reserva
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               
               <div className="auth-logged-in-actions">

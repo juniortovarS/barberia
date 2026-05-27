@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import '../styles/Cita.css';
 import { FaCalendarCheck, FaArrowRight, FaArrowLeft, FaCheck, FaUser, FaPhone, FaEnvelope, FaCalendarAlt, FaClock, FaWhatsapp } from 'react-icons/fa';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -8,6 +8,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 import emailjs from '@emailjs/browser';
 import yapeQr from '../assets/yape_qr.png';
 import { createWorker } from 'tesseract.js';
+import { useAuth } from '../components/AuthContext';
+import { supabase } from '../supabaseClient';
 
 // Registrar localización en español para el calendario
 registerLocale('es', es);
@@ -58,6 +60,7 @@ const comprimirImagen = (file) => {
 };
 
 const Cita = () => {
+  const { user } = useAuth();
   const formRef = useRef();
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [paso, setPaso] = useState(1); // 1: Datos, 2: Fecha, 3: Hora, 4: Pago
@@ -69,6 +72,19 @@ const Cita = () => {
   const [confirmacionVisible, setConfirmacionVisible] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [emailErrorStatus, setEmailErrorStatus] = useState(false);
+
+  // Efecto para precargar datos de la sesión del usuario si está logueado
+  useEffect(() => {
+    if (user) {
+      if (user.user_metadata?.nombre) {
+        setNombre(user.user_metadata.nombre);
+      }
+      if (user.email) {
+        setEmail(user.email);
+      }
+    }
+  }, [user, mostrarFormulario]);
   const [metodoPago, setMetodoPago] = useState('yape'); // 'yape' o 'plin'
   const [celularPago, setCelularPago] = useState('');
   const [capturaPreview, setCapturaPreview] = useState(null);
@@ -313,30 +329,148 @@ const Cita = () => {
     // Nombre con los datos de pago integrados de forma limpia para Supabase y Twilio
     const nombreCompletoConPago = `${nombre} (${metodoPago.toUpperCase()} Ref: ${codigoReserva} - Cel: ${celularPago} - Estado: ${estadoReserva.toUpperCase()})`;
 
-    const adminData = {
-      nombre: nombreCompletoConPago,
-      celular,
-      email,
-      fecha,
-      hora,
-      metodo_pago: metodoPago.toUpperCase(),
-      celular_pago: celularPago,
-      codigo_reserva: codigoReserva,
-      estado: estadoReserva.toUpperCase(),
-      captura_pago: capturaBase64
-    };
+    const baseMessageText = `
+========================================
+            BARBERÍA PRO
+========================================
+Hola ${nombre},
+
+Tu reserva ha sido registrada de manera exitosa.
+
+DETALLES DE LA CITA:
+----------------------------------------
+Cliente:      ${nombre}
+Teléfono:     ${celular}
+Correo:       ${email}
+Fecha:        ${fecha}
+Hora:         ${hora}
+Código:       ${codigoReserva}
+Método Pago:  ${metodoPago.toUpperCase()} (Ref: ${celularPago})
+Estado:       ${estadoReserva.toUpperCase()}
+----------------------------------------
+
+¡Gracias por elegirnos!
+========================================
+`;
+
+    const baseMessageHtml = `
+<div style="font-family: 'Courier New', Courier, monospace; background-color: #000000; color: #ffffff; padding: 40px 20px; text-align: center;">
+  <div style="max-width: 500px; margin: 0 auto; background-color: #000000; border: 1px solid #333333; padding: 30px; text-align: left; box-sizing: border-box;">
     
-    const userData = {
+    <div style="text-align: center; border-bottom: 1px solid #333333; padding-bottom: 20px; margin-bottom: 25px;">
+      <h1 style="font-size: 22px; font-weight: bold; letter-spacing: 4px; margin: 0; text-transform: uppercase; color: #ffffff;">BARBERÍA PRO</h1>
+      <p style="font-size: 11px; color: #888888; margin: 5px 0 0 0; letter-spacing: 2px;">ESTILO & ELEGANCIA MASCULINA</p>
+    </div>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #dddddd; margin-bottom: 25px;">
+      Hola, <strong>${nombre}</strong>.<br />
+      Se ha agendado tu reserva con éxito en nuestro sistema. A continuación los detalles de la cita:
+    </p>
+
+    <div style="background-color: #111111; border: 1px dashed #444444; padding: 20px; margin-bottom: 25px; font-size: 13px; line-height: 1.8;">
+      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
+        <span style="color: #888888;">Cliente:</span> 
+        <strong style="float: right; color: #ffffff;">${nombre}</strong>
+      </div>
+      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
+        <span style="color: #888888;">Celular:</span> 
+        <strong style="float: right; color: #ffffff;">${celular}</strong>
+      </div>
+      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
+        <span style="color: #888888;">Correo:</span> 
+        <strong style="float: right; color: #ffffff; text-transform: none;">${email}</strong>
+      </div>
+      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
+        <span style="color: #888888;">Fecha Cita:</span> 
+        <strong style="float: right; color: #ffffff;">${fecha}</strong>
+      </div>
+      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
+        <span style="color: #888888;">Hora Cita:</span> 
+        <strong style="float: right; color: #ffffff;">${hora}</strong>
+      </div>
+      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
+        <span style="color: #888888;">Código Único:</span> 
+        <strong style="float: right; color: #ffd700; font-family: monospace;">${codigoReserva}</strong>
+      </div>
+      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
+        <span style="color: #888888;">Método de Pago:</span> 
+        <strong style="float: right; color: #ffffff;">${metodoPago.toUpperCase()} (${celularPago})</strong>
+      </div>
+      <div style="padding-top: 4px;">
+        <span style="color: #888888;">Estado Pago:</span> 
+        <strong style="float: right; color: #00e676; text-transform: uppercase;">${estadoReserva.toUpperCase()}</strong>
+      </div>
+    </div>
+
+    <p style="font-size: 12px; line-height: 1.6; color: #888888; margin-bottom: 0; text-align: center;">
+      Si deseas realizar algún cambio o cancelar la cita, puedes hacerlo directamente desde el menú "Mi Cuenta" en nuestra web.<br /><br />
+      <span style="color: #555555;">© 2026 Barbería Pro. Todos los derechos reservados.</span>
+    </p>
+
+  </div>
+</div>
+`;
+
+    const adminParams = {
+      asunto: "NUEVA RESERVA - BARBERÍA PRO",
+      subject: "NUEVA RESERVA - BARBERÍA PRO",
+      nombre: nombreCompletoConPago,
+      cliente: nombre,
       user_name: nombre,
-      user_email: email,
+      name: nombre,
+      
+      celular: celular,
       user_phone: celular,
-      fecha,
-      hora,
+      phone: celular,
+      telefono: celular,
+      
+      email: email,
+      user_email: email,
+      correo: email,
+      
+      fecha: fecha,
+      hora: hora,
+      codigo: codigoReserva,
+      codigo_reserva: codigoReserva,
       metodo_pago: metodoPago.toUpperCase(),
       celular_pago: celularPago,
-      codigo_reserva: codigoReserva,
       estado: estadoReserva.toUpperCase(),
-      captura_pago: capturaBase64
+      
+      mensaje: baseMessageText.replace(nombre, nombreCompletoConPago),
+      message: baseMessageText.replace(nombre, nombreCompletoConPago),
+      mensaje_html: baseMessageHtml.replace(`<strong>${nombre}</strong>`, `<strong>${nombreCompletoConPago}</strong>`),
+      message_html: baseMessageHtml.replace(`<strong>${nombre}</strong>`, `<strong>${nombreCompletoConPago}</strong>`)
+    };
+
+    const userParams = {
+      asunto: "RESERVA CONFIRMADA - BARBERÍA PRO",
+      subject: "RESERVA CONFIRMADA - BARBERÍA PRO",
+      nombre: nombre,
+      cliente: nombre,
+      user_name: nombre,
+      name: nombre,
+      
+      celular: celular,
+      user_phone: celular,
+      phone: celular,
+      telefono: celular,
+      
+      email: email,
+      user_email: email,
+      correo: email,
+      
+      fecha: fecha,
+      hora: hora,
+      codigo: codigoReserva,
+      codigo_reserva: codigoReserva,
+      metodo_pago: metodoPago.toUpperCase(),
+      celular_pago: celularPago,
+      estado: estadoReserva.toUpperCase(),
+      
+      mensaje: baseMessageText,
+      message: baseMessageText,
+      mensaje_html: baseMessageHtml,
+      message_html: baseMessageHtml
     };
 
     try {
@@ -345,7 +479,7 @@ const Cita = () => {
         await emailjs.send(
           'service_0ry9t41',
           'template_96itk4u',
-          adminData,
+          adminParams,
           'QU8t-8ZyBlO4O4jDY'
         );
         console.log("✉️ Correo enviado al administrador");
@@ -354,17 +488,20 @@ const Cita = () => {
       }
 
       // 2. Email al usuario (EmailJS) - envuelto en try-catch individual
+      let emailFailed = false;
       try {
         await emailjs.send(
           'service_0ry9t41',
           'template_ruofj9e',
-          userData,
+          userParams,
           'QU8t-8ZyBlO4O4jDY'
         );
         console.log("✉️ Correo enviado al usuario");
       } catch (emailUserErr) {
         console.error("❌ Error enviando email al usuario:", emailUserErr);
+        emailFailed = true;
       }
+      setEmailErrorStatus(emailFailed);
 
       // 3. Guardar en Google Sheets (Google Apps Script)
       if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("Reemplaza")) {
@@ -393,6 +530,7 @@ const Cita = () => {
       }
 
       // 4. Guardar en base de datos Supabase (Render backend)
+      let databaseSaved = false;
       try {
         const response = await fetch(`${API_URL}/reservar-cita`, {
           method: 'POST',
@@ -408,10 +546,72 @@ const Cita = () => {
             voucher_base64: capturaBase64
           }),
         });
-        const resData = await response.json();
-        console.log("✅ Cita sincronizada con Supabase:", resData);
+        if (response.ok) {
+          const resData = await response.json();
+          console.log("✅ Cita sincronizada con Supabase:", resData);
+          databaseSaved = true;
+        } else {
+          console.error("❌ El backend respondió con un error:", response.status);
+        }
       } catch (dbErr) {
         console.error("❌ Error al guardar en base de datos:", dbErr);
+      }
+
+      // Si el backend falló o no pudo guardar, insertamos directamente desde el cliente como respaldo
+      if (!databaseSaved) {
+        console.log("🔄 Iniciando guardado de respaldo directo en Supabase...");
+        try {
+          let voucher_url = null;
+          if (capturaBase64) {
+            try {
+              const filename = `voucher-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}.jpg`;
+              const matches = capturaBase64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+              if (matches && matches.length === 3) {
+                const contentType = matches[1];
+                const base64Data = matches[2];
+                const binaryStr = atob(base64Data);
+                const bytes = new Uint8Array(binaryStr.length);
+                for (let i = 0; i < binaryStr.length; i++) {
+                  bytes[i] = binaryStr.charCodeAt(i);
+                }
+                
+                const { error: uploadErr } = await supabase.storage
+                  .from('vouchers')
+                  .upload(filename, bytes, { contentType, upsert: true });
+                
+                if (!uploadErr) {
+                  const { data: publicUrlData } = supabase.storage
+                    .from('vouchers')
+                    .getPublicUrl(filename);
+                  voucher_url = publicUrlData.publicUrl;
+                } else {
+                  console.error("❌ Error al subir captura en guardado directo:", uploadErr.message);
+                }
+              }
+            } catch (errUpload) {
+              console.error("❌ Excepción al subir captura en guardado directo:", errUpload);
+            }
+          }
+
+          const { error: insertErr } = await supabase
+            .from("reservas")
+            .insert([{
+              nombre: nombreCompletoConPago,
+              celular,
+              email,
+              fecha_cita: fecha,
+              hora_cita: hora,
+              fecha_registro: new Date().toISOString(),
+              codigo: codigoReserva,
+              estado: estadoReserva.toUpperCase(),
+              voucher_url
+            }]);
+          
+          if (insertErr) throw insertErr;
+          console.log("✅ Cita guardada de respaldo directamente en Supabase con éxito");
+        } catch (fbErr) {
+          console.error("❌ Error fatal en el guardado de respaldo Supabase:", fbErr);
+        }
       }
 
       setLoading(false);
@@ -424,9 +624,9 @@ const Cita = () => {
   };
 
   const cerrarConfirmacion = () => {
-    setNombre('');
+    setNombre(user?.user_metadata?.nombre || '');
     setCelular('');
-    setEmail('');
+    setEmail(user?.email || '');
     setFechaSeleccionada(null);
     setHoraSeleccionada('');
     setMetodoPago('yape');
@@ -601,9 +801,16 @@ const Cita = () => {
                       value={email} 
                       onChange={(e) => setEmail(e.target.value)} 
                       required 
+                      disabled={!!user}
+                      title={user ? "Tu correo está vinculado a tu cuenta y no se puede modificar" : ""}
                     />
                     <span className="input-focus-border"></span>
                   </div>
+                  {user && (
+                    <p className="email-linked-helper" style={{ fontSize: '0.78rem', color: '#aaaaaa', marginTop: '-12px', marginBottom: '16px', textAlign: 'left', fontStyle: 'italic' }}>
+                      💡 Correo asociado a tu cuenta activa. Tu reserva se guardará aquí.
+                    </p>
+                  )}
                   
                   <div className="wizard-buttons">
                     <button className="cerrar-btn-wizard" type="button" onClick={toggleFormulario}>Cancelar</button>
@@ -729,20 +936,40 @@ const Cita = () => {
                     <div className="ficha-item">
                       <span>Código de reserva:</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <strong 
-                          className="codigo-highlight" 
+                        <input
+                          type="text"
+                          value={codigoReserva}
+                          onChange={(e) => setCodigoReserva(e.target.value.toUpperCase())}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.07)',
+                            border: '1px dashed #ffd700',
+                            color: '#ffd700',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            width: '120px',
+                            fontFamily: 'monospace',
+                            fontSize: '0.85rem',
+                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            outline: 'none'
+                          }}
+                          title="Puedes modificar este código para pruebas"
+                        />
+                        <button
+                          type="button"
                           onClick={() => copiarAlPortapapeles(codigoReserva)}
-                          title="Hacer clic para copiar"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            color: '#ccc',
+                            fontSize: '0.68rem',
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
                         >
-                          {codigoReserva}
-                        </strong>
-                        {copiado ? (
-                          <span style={{ fontSize: '0.7rem', color: '#ffd700', fontWeight: 'bold' }} className="fade-in">
-                            ¡Copiado!
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '0.62rem', color: '#777' }}>(Clic para copiar)</span>
-                        )}
+                          {copiado ? "¡Copiado!" : "Copiar"}
+                        </button>
                       </div>
                     </div>
                     <div className="ficha-item">
@@ -983,7 +1210,12 @@ const Cita = () => {
             </div>
             
             <h2 className="confirmacion-title">¡Reserva Exitosa!</h2>
-            <p className="confirmacion-subtitle">Hemos agendado tu cita de manera correcta. Te llegará un correo de confirmación.</p>
+            <p className="confirmacion-subtitle">
+              {emailErrorStatus 
+                ? "Hemos agendado tu cita correctamente en tu perfil. (Nota: Hubo un inconveniente al enviar la confirmación a tu correo, pero puedes ver tu reserva en tu perfil)."
+                : "Hemos agendado tu cita de manera correcta. Te llegará un correo de confirmación."
+              }
+            </p>
             
             <div className="confirmacion-resumen-box">
               <div className="resumen-item"><span>📍 Ubicación:</span> <span>Av. Principal 123 - Lima, Perú</span></div>
