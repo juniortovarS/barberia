@@ -1198,3 +1198,29 @@
   box-shadow: 0 2px 8px rgba(255, 74, 74, 0.25);
 }
 
+/* Admin link highlight styles */
+.navbar-link-admin {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 12px !important;
+  border-radius: 6px;
+  font-size: 0.78rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.navbar-link-admin:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.navbar-link-admin::after {
+  display: none !important;
+}
+
+.mobile-menu-link-admin {
+  color: #ffffff !important;
+  opacity: 0.7;
+  font-size: 1.1rem !important;
+}

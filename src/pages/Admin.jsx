@@ -670,7 +670,7 @@ Estado:       ${clientEstado.toUpperCase()}
                   {filteredReservas.map((reserva) => (
                     <tr key={reserva.id} className="admin-tr">
                       {/* Cliente */}
-                      <td>
+                      <td data-label="Cliente">
                         <div className="client-info-cell">
                           <div className="client-avatar">
                             <FaUser size={14} />
@@ -684,7 +684,7 @@ Estado:       ${clientEstado.toUpperCase()}
                       </td>
 
                       {/* Fecha y Hora */}
-                      <td>
+                      <td data-label="Fecha / Hora">
                         <div className="datetime-cell">
                           <span><FaCalendarAlt size={12} className="cell-icon" /> {reserva.fecha_cita}</span>
                           <span className="time-sub"><FaClock size={12} className="cell-icon" /> {reserva.hora_cita}</span>
@@ -692,12 +692,12 @@ Estado:       ${clientEstado.toUpperCase()}
                       </td>
 
                       {/* Código Único */}
-                      <td>
+                      <td data-label="Código">
                         <span className="code-badge">{reserva.codigo || 'S/C'}</span>
                       </td>
 
                       {/* Comprobante */}
-                      <td>
+                      <td data-label="Pago">
                         {reserva.voucher_url ? (
                           <div className="voucher-cell">
                             <div className="voucher-thumbnail-wrapper">
@@ -707,7 +707,7 @@ Estado:       ${clientEstado.toUpperCase()}
                               className="btn-view-voucher"
                               onClick={() => setSelectedVoucher(reserva.voucher_url)}
                             >
-                              <FaEye /> Ver Foto
+                              <FaEye /> Ver
                             </button>
                           </div>
                         ) : (
@@ -716,7 +716,7 @@ Estado:       ${clientEstado.toUpperCase()}
                       </td>
 
                       {/* Estado */}
-                      <td>
+                      <td data-label="Estado">
                         <span className={`status-pill ${reserva.estado || 'pending'}`}>
                           {reserva.estado === 'approved' && 'Aprobado'}
                           {reserva.estado === 'cancelled' && 'Cancelado'}
@@ -725,7 +725,7 @@ Estado:       ${clientEstado.toUpperCase()}
                       </td>
 
                       {/* Acciones */}
-                      <td>
+                      <td data-label="Acciones">
                         <div className="action-buttons-cell">
                           <button 
                             className="btn-action-approve"
@@ -783,7 +783,7 @@ Estado:       ${clientEstado.toUpperCase()}
                   {clientesUnicos.map((cliente, idx) => (
                     <tr key={cliente.key || idx} className="admin-tr">
                       {/* Cliente */}
-                      <td>
+                      <td data-label="Cliente">
                         <div className="client-info-cell">
                           <div className="client-avatar">
                             <span className="client-avatar-initials">
@@ -797,7 +797,7 @@ Estado:       ${clientEstado.toUpperCase()}
                       </td>
 
                       {/* Contacto */}
-                      <td>
+                      <td data-label="Contacto">
                         <div className="contact-details-cell">
                           <span><FaPhone size={10} /> {cliente.celular}</span>
                           <span style={{ textTransform: 'none', color: '#666666', fontSize: '0.8rem' }}>
@@ -807,26 +807,26 @@ Estado:       ${clientEstado.toUpperCase()}
                       </td>
 
                       {/* Total Citas */}
-                      <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                      <td data-label="Total" style={{ fontWeight: 'bold' }}>
                         {cliente.totalCitas}
                       </td>
 
                       {/* Citas Aprobadas */}
-                      <td style={{ textAlign: 'center' }}>
+                      <td data-label="Aprobadas">
                         <span className="stats-badge approved">
                           {cliente.citasAprobadas}
                         </span>
                       </td>
 
                       {/* Última Visita */}
-                      <td>
+                      <td data-label="Última Visita">
                         <div className="datetime-cell">
                           <span><FaCalendarAlt size={12} className="cell-icon" /> {cliente.ultimaCita}</span>
                         </div>
                       </td>
 
                       {/* Acción */}
-                      <td>
+                      <td data-label="">
                         <button 
                           className="btn-view-client-history"
                           onClick={() => setSelectedClient(cliente)}

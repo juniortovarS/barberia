@@ -268,6 +268,7 @@ const Navbar = () => {
     { to: "/blog", label: "BLOG" },
     { to: "/contacto", label: "CONTACTO" },
     { to: "/tienda", label: "TIENDA" },
+    ...(isAdmin ? [{ to: "/admin", label: "PANEL DE CONTROL", isAdmin: true }] : []),
   ];
 
   return (
@@ -283,12 +284,17 @@ const Navbar = () => {
           </Link>
         </div>
 
-        {/* Links de escritorio */}
+        {/* Links de escritorio modificar el navbar */}
         <div className="navbar-center">
           <ul className="navbar-links">
             {links.map((link) => (
               <li key={link.to}>
-                <Link to={link.to} className="navbar-link">{link.label}</Link>
+                <Link
+                  to={link.to}
+                  className={`navbar-link${link.isAdmin ? ' navbar-link-admin' : ''}`}
+                >
+                  {link.isAdmin ? ' ' : ''}{link.label}
+                </Link>
               </li>
             ))}
           </ul>
@@ -346,10 +352,10 @@ const Navbar = () => {
             >
               <Link
                 to={link.to}
-                className="mobile-menu-link"
+                className={`mobile-menu-link${link.isAdmin ? ' mobile-menu-link-admin' : ''}`}
                 onClick={() => setMenuOpen(false)}
               >
-                {link.label}
+                {link.isAdmin ? ' ' : ''}{link.label}
               </Link>
             </li>
           ))}
@@ -447,7 +453,7 @@ const Navbar = () => {
                   <span className="profile-card-label">Tipo de Usuario</span>
                   <div className="profile-card-badge-wrapper">
                     <span className={`profile-badge-modern ${isAdmin ? 'admin-badge' : 'customer-badge'}`}>
-                      {isAdmin ? 'Administrador 👑' : 'Cliente 💈'}
+                      {isAdmin ? 'Administrador ' : 'Cliente 💈'}
                     </span>
                   </div>
                 </div>

@@ -1179,21 +1179,181 @@
 }
 
 @media (max-width: 768px) {
+  .admin-container {
+    padding: 90px 16px 40px 16px;
+  }
+
   .admin-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 15px;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+  }
+
+  .admin-title {
+    font-size: 1.6rem;
   }
   
   .btn-sync {
     width: 100%;
     justify-content: center;
   }
-  
+
+  /* Tabs nav — horizontal scroll on mobile */
+  .admin-tabs-nav {
+    gap: 6px;
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+  }
+
+  .tab-nav-btn {
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* KPI Grid - 2 columns on mobile */
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 25px;
+  }
+
+  .kpi-card {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .kpi-icon-wrapper {
+    width: 38px;
+    height: 38px;
+  }
+
+  .kpi-icon {
+    font-size: 1rem;
+  }
+
+  .kpi-value {
+    font-size: 1.25rem;
+  }
+
+  .kpi-label {
+    font-size: 0.65rem;
+  }
+
+  /* Dashboard panels */
+  .dashboard-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 15px 16px;
+  }
+
+  .panel-title {
+    font-size: 0.9rem;
+  }
+
+  .dashboard-panel-body {
+    padding: 0 16px 10px 16px;
+  }
+
+  .panel-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .item-right {
+    align-self: flex-end;
+  }
+
+  /* MOBILE CARDS for Tables (replacing horizontal scroll) */
+  .admin-table-wrapper {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .admin-table {
+    min-width: unset;
+  }
+
+  .admin-table thead {
+    display: none;
+  }
+
+  .admin-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .admin-tr {
+    display: flex;
+    flex-direction: column;
+    background: rgba(15, 15, 15, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 16px;
+    gap: 10px;
+  }
+
+  .admin-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-size: 0.85rem;
+  }
+
+  .admin-table td:last-child {
+    border-bottom: none;
+  }
+
+  .admin-table td::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #555555;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
+  .client-info-cell {
+    gap: 10px;
+  }
+
+  .client-avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .action-buttons-cell {
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .action-buttons-cell button {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+
+  /* Search & Filter */
   .admin-toolbar {
     flex-direction: column;
     align-items: stretch;
-    gap: 15px;
+    gap: 12px;
+    margin-bottom: 20px;
   }
   
   .search-bar-modern {
@@ -1202,11 +1362,91 @@
   
   .filter-buttons {
     overflow-x: auto;
-    padding-bottom: 5px;
+    padding-bottom: 4px;
+    gap: 6px;
   }
-  
+
+  .filter-btn {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    font-size: 0.75rem;
+  }
+
+  /* Modals mobile */
+  .history-modal-content {
+    padding: 25px 18px;
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+
   .history-stats-summary {
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .stat-box {
+    padding: 10px 8px;
+  }
+
+  .stat-box .num {
+    font-size: 1.1rem;
+  }
+
+  .stat-box .lbl {
+    font-size: 0.6rem;
+  }
+
+  .client-large-avatar {
+    width: 54px;
+    height: 54px;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .history-modal-title {
+    font-size: 1.1rem;
+  }
+
+  .client-contact-row {
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.78rem;
+  }
+
+  .modal-booking-row {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  /* Admin Form */
+  .admin-form-container {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+
+  .form-row-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .btn-submit-admin-booking {
+    width: 100%;
+    text-align: center;
+  }
+
+  .form-actions-admin {
+    justify-content: center;
+  }
+
+  /* Section headers */
+  .section-title {
+    font-size: 1.1rem;
+  }
+
+  .clientes-section-header,
+  .agendar-section-header {
+    margin-bottom: 16px;
   }
 }
