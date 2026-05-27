@@ -658,6 +658,22 @@ const Navbar = () => {
                   )}
                 </button>
               </form>
+              
+              {!isRegistering && (
+                <div className="admin-shortcut-wrapper">
+                  <button
+                    className="admin-shortcut-btn"
+                    onClick={() => {
+                      setAuthEmail("juniortovaradmin@gmail.com");
+                      setAuthPassword("");
+                      setAuthError("");
+                      setAuthSuccess("Por favor ingresa la contraseña de administrador.");
+                    }}
+                  >
+                    Ingresar como administrador
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
