@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }) => {
     const email = u.email || '';
     const isUserAdmin = 
       userRole === 'admin' || 
+      email === 'juniortovaradmin@gmail.com' ||
       email === 'juniortovar601@gmail.com' ||
       email.startsWith('admin') || 
       email.endsWith('@barberia.com');
@@ -53,7 +54,13 @@ export const AuthProvider = ({ children }) => {
   // Función para registrarse
   const signup = async (email, password, nombre) => {
     try {
-      const role = email === 'juniortovar601@gmail.com' || email.startsWith('admin') || email.endsWith('@barberia.com') ? 'admin' : 'customer';
+      const role = 
+        email === 'juniortovaradmin@gmail.com' || 
+        email === 'juniortovar601@gmail.com' || 
+        email.startsWith('admin') || 
+        email.endsWith('@barberia.com') 
+          ? 'admin' 
+          : 'customer';
       const { data, error } = await supabase.auth.signUp({
         email,
         password,

@@ -175,7 +175,7 @@ const Navbar = () => {
         setAuthSuccess("Sesión iniciada con éxito");
         setTimeout(() => {
           setMostrarAuth(false);
-          const isUserAdmin = authEmail === 'juniortovar601@gmail.com' || authEmail.startsWith('admin') || authEmail.endsWith('@barberia.com') || res.data.user?.user_metadata?.role === 'admin';
+          const isUserAdmin = authEmail === 'juniortovaradmin@gmail.com' || authEmail === 'juniortovar601@gmail.com' || authEmail.startsWith('admin') || authEmail.endsWith('@barberia.com') || res.data.user?.user_metadata?.role === 'admin';
           if (isUserAdmin) {
             navigate("/admin");
           }
@@ -658,22 +658,6 @@ const Navbar = () => {
                   )}
                 </button>
               </form>
-
-              {!isRegistering && (
-                <div className="admin-shortcut-wrapper">
-                  <button
-                    className="admin-shortcut-btn"
-                    onClick={() => {
-                      setAuthEmail("juniortovar601@gmail.com");
-                      setAuthPassword("admin123456");
-                      setAuthError("");
-                      setAuthSuccess("Credenciales de administrador cargadas. ¡Inicia sesión!");
-                    }}
-                  >
-                    Ingresar como administrador
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
