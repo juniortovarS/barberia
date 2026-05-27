@@ -557,6 +557,31 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Numeric columns alignment */
+.th-center {
+  text-align: center !important;
+}
+
+.td-number {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.number-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+}
+
 .stats-badge.approved {
   background-color: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.3);

@@ -367,10 +367,13 @@ Estado:       ${clientEstado.toUpperCase()}
 
   const todayStr = getTodayString();
 
+  // Normalizar estado a minúsculas para comparación consistente (en BD puede venir 'PENDING', 'pending', etc.)
+  const normalizeEstado = (estado) => (estado || '').toLowerCase() || 'pending';
+
   // Filtrado y Cálculo de KPIs
-  const approvedReservas = reservas.filter(r => r.estado === 'approved');
-  const pendingReservas = reservas.filter(r => r.estado === 'pending' || !r.estado);
-  const cancelledReservas = reservas.filter(r => r.estado === 'cancelled');
+  const approvedReservas = reservas.filter(r => normalizeEstado(r.estado) === 'approved');
+  const pendingReservas = reservas.filter(r => normalizeEstado(r.estado) === 'pending');
+  const cancelledReservas = reservas.filter(r => normalizeEstado(r.estado) === 'cancelled');
 
   // Ingresos aprobados estimados (S/ 1.00 por reserva aprobada de abono)
   const approvedRevenue = approvedReservas.length * 1.00;
@@ -383,7 +386,8 @@ Estado:       ${clientEstado.toUpperCase()}
 
   // Filtrar citas en el buscador de la pestaña "Citas"
   const filteredReservas = reservas.filter(reserva => {
-    const matchesEstado = filtroEstado === 'all' || (reserva.estado || 'pending') === filtroEstado;
+    const estadoNorm = normalizeEstado(reserva.estado);
+    const matchesEstado = filtroEstado === 'all' || estadoNorm === filtroEstado;
     const searchString = `${reserva.nombre} ${reserva.celular} ${reserva.codigo || ''}`.toLowerCase();
     const matchesSearch = searchString.includes(searchTerm.toLowerCase());
     return matchesEstado && matchesSearch;
@@ -551,8 +555,8 @@ Estado:       ${clientEstado.toUpperCase()}
                           <span className="item-phone"><FaPhone size={10} /> {reserva.celular}</span>
                         </div>
                         <div className="item-right">
-                          <span className={`status-pill ${reserva.estado || 'pending'}`}>
-                            {reserva.estado === 'approved' ? 'Aprobado' : reserva.estado === 'cancelled' ? 'Cancelado' : 'Pendiente'}
+                          <span className={`status-pill ${normalizeEstado(reserva.estado)}`}>
+                            {normalizeEstado(reserva.estado) === 'approved' ? 'Aprobado' : normalizeEstado(reserva.estado) === 'cancelled' ? 'Cancelado' : 'Pendiente'}
                           </span>
                         </div>
                       </div>
@@ -584,8 +588,8 @@ Estado:       ${clientEstado.toUpperCase()}
                           </span>
                         </div>
                         <div className="item-right">
-                          <span className={`status-pill ${reserva.estado || 'pending'}`}>
-                            {reserva.estado === 'approved' ? 'Aprobado' : reserva.estado === 'cancelled' ? 'Cancelado' : 'Pendiente'}
+                          <span className={`status-pill ${normalizeEstado(reserva.estado)}`}>
+                            {normalizeEstado(reserva.estado) === 'approved' ? 'Aprobado' : normalizeEstado(reserva.estado) === 'cancelled' ? 'Cancelado' : 'Pendiente'}
                           </span>
                         </div>
                       </div>
@@ -720,10 +724,10 @@ Estado:       ${clientEstado.toUpperCase()}
 
                       {/* Estado */}
                       <td data-label="Estado">
-                        <span className={`status-pill ${reserva.estado || 'pending'}`}>
-                          {reserva.estado === 'approved' && 'Aprobado'}
-                          {reserva.estado === 'cancelled' && 'Cancelado'}
-                          {(reserva.estado === 'pending' || !reserva.estado) && 'Pendiente'}
+                        <span className={`status-pill ${normalizeEstado(reserva.estado)}`}>
+                          {normalizeEstado(reserva.estado) === 'approved' && 'Aprobado'}
+                          {normalizeEstado(reserva.estado) === 'cancelled' && 'Cancelado'}
+                          {normalizeEstado(reserva.estado) === 'pending' && 'Pendiente'}
                         </span>
                       </td>
 
@@ -733,7 +737,7 @@ Estado:       ${clientEstado.toUpperCase()}
                           <button 
                             className="btn-action-approve"
                             onClick={() => handleUpdateEstado(reserva.id, 'approved')}
-                            disabled={reserva.estado === 'approved' || actionLoadingId === reserva.id}
+                            disabled={normalizeEstado(reserva.estado) === 'approved' || actionLoadingId === reserva.id}
                             title="Aprobar Pago"
                           >
                             <FaCheck />
@@ -741,7 +745,7 @@ Estado:       ${clientEstado.toUpperCase()}
                           <button 
                             className="btn-action-cancel"
                             onClick={() => handleUpdateEstado(reserva.id, 'cancelled')}
-                            disabled={reserva.estado === 'cancelled' || actionLoadingId === reserva.id}
+                            disabled={normalizeEstado(reserva.estado) === 'cancelled' || actionLoadingId === reserva.id}
                             title="Cancelar Reserva"
                           >
                             <FaTimes />
@@ -776,8 +780,8 @@ Estado:       ${clientEstado.toUpperCase()}
                   <tr>
                     <th>Cliente</th>
                     <th>Contacto</th>
-                    <th style={{ textAlign: 'center' }}>Total Citas</th>
-                    <th style={{ textAlign: 'center' }}>Aprobadas</th>
+                    <th className="th-center">Total Citas</th>
+                    <th className="th-center">Aprobadas</th>
                     <th>Última Visita</th>
                     <th>Acción</th>
                   </tr>
@@ -810,12 +814,12 @@ Estado:       ${clientEstado.toUpperCase()}
                       </td>
 
                       {/* Total Citas */}
-                      <td data-label="Total" style={{ fontWeight: 'bold' }}>
-                        {cliente.totalCitas}
+                      <td data-label="Total Citas" className="td-number">
+                        <span className="number-value">{cliente.totalCitas}</span>
                       </td>
 
                       {/* Citas Aprobadas */}
-                      <td data-label="Aprobadas">
+                      <td data-label="Aprobadas" className="td-number">
                         <span className="stats-badge approved">
                           {cliente.citasAprobadas}
                         </span>
