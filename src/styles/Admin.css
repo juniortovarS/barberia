@@ -122,10 +122,10 @@
 }
 
 .animated {
-  animation: fadeIn 0.4s ease forwards;
+  animation: adminFadeIn 0.4s ease forwards;
 }
 
-@keyframes fadeIn {
+@keyframes adminFadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
