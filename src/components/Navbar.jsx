@@ -102,6 +102,41 @@ const Navbar = () => {
     }
   }, [mostrarAuth, user, fetchMisReservas]);
 
+  // Cerrar el popup de autenticación al hacer click afuera o hacer scroll en la página principal
+  useEffect(() => {
+    const handleScrollClose = () => {
+      if (mostrarAuth) {
+        setMostrarAuth(false);
+      }
+    };
+
+    const handleClickOutsideClose = (event) => {
+      if (!mostrarAuth) return;
+      
+      const authPopup = document.querySelector('.auth-popup-navbar');
+      const userIcon = document.querySelector('.user-icon-wrapper');
+      
+      if (
+        authPopup && 
+        !authPopup.contains(event.target) && 
+        userIcon && 
+        !userIcon.contains(event.target)
+      ) {
+        setMostrarAuth(false);
+      }
+    };
+
+    if (mostrarAuth) {
+      window.addEventListener("scroll", handleScrollClose, { passive: true });
+      document.addEventListener("mousedown", handleClickOutsideClose);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScrollClose);
+      document.removeEventListener("mousedown", handleClickOutsideClose);
+    };
+  }, [mostrarAuth]);
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError("");

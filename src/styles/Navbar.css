@@ -521,6 +521,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   transition: var(--transition-fast);
+  z-index: 10; /* ✅ Asegura que la X esté siempre encima y sea presionable */
 }
 
 .cerrar-auth-btn:hover {
