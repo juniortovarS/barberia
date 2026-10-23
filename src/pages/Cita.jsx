@@ -6,6 +6,7 @@ import { FaCalendarCheck, FaArrowRight, FaArrowLeft, FaCheck, FaUser, FaPhone, F
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { API_URL, WHATSAPP_NUMERO, SEDE } from '../config';
 import { generarTokenYape } from '../utils/yape';
+import { cerrarAlTocarFuera } from '../utils/modal';
 import es from 'date-fns/locale/es';
 import 'react-datepicker/dist/react-datepicker.css';
 import emailjs from '@emailjs/browser';
@@ -535,7 +536,7 @@ Estado:       ${estadoReserva.toUpperCase()}
       </div>
 
       {mostrarFormulario && !confirmacionVisible && (
-        <div className="cita-formulario-overlay">
+        <div className="cita-formulario-overlay" {...cerrarAlTocarFuera(toggleFormulario)}>
           <div className="cita-formulario-contenido wizard-box">
             
             {/* Barra de Progreso Visual */}
@@ -937,8 +938,8 @@ Estado:       ${estadoReserva.toUpperCase()}
       )}
 
       {mostrarClubPopup && (
-        <div className="club-popup-overlay" role="dialog" aria-modal="true" aria-labelledby="club-popup-titulo" onClick={cerrarClubPopup}>
-          <div className="club-popup fade-in-scale" onClick={(e) => e.stopPropagation()}>
+        <div className="club-popup-overlay" role="dialog" aria-modal="true" aria-labelledby="club-popup-titulo" {...cerrarAlTocarFuera(cerrarClubPopup)}>
+          <div className="club-popup fade-in-scale">
             <button type="button" className="club-popup-cerrar" onClick={cerrarClubPopup} aria-label="Cerrar"><FaTimes /></button>
             <div className="club-popup-icono"><FaCrown /></div>
             <span className="club-popup-kicker">Club De Fidelidad JP</span>
@@ -960,7 +961,7 @@ Estado:       ${estadoReserva.toUpperCase()}
       )}
 
       {confirmacionVisible && (
-        <div className="cita-formulario-overlay">
+        <div className="cita-formulario-overlay" {...cerrarAlTocarFuera(cerrarConfirmacion)}>
           <div className="cita-formulario-contenido confirmacion-box fade-in-scale">
             <div className="confirmacion-success-animation">
               <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">

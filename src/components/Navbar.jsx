@@ -8,6 +8,7 @@ import { useAuth } from "./AuthContext";
 import { supabase } from "../supabaseClient"; // ✅ IMPORTA CLIENTE DE SUPABASE
 import { ADMIN_EMAILS } from "../config";
 import TemaToggle from "./TemaToggle";
+import { cerrarAlTocarFuera } from "../utils/modal";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = React.useState(false);
@@ -404,7 +405,7 @@ const Navbar = () => {
       {mostrarAuth && (!user || recuperandoClave) && (
         <div
           className="auth-modal-overlay"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) cerrarAuth(); }}
+          {...cerrarAlTocarFuera(cerrarAuth)}
         >
         <div
           className="auth-popup-navbar"
