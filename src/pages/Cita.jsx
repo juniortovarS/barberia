@@ -5,7 +5,7 @@ import '../styles/CitaServicios.css';
 import { FaCalendarCheck, FaArrowRight, FaArrowLeft, FaCheck, FaUser, FaPhone, FaEnvelope, FaCalendarAlt, FaWhatsapp, FaLock, FaSun, FaCloudSun, FaMoon, FaGift, FaCrown, FaTimes, FaCut, FaHourglassHalf } from 'react-icons/fa';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { API_URL, WHATSAPP_NUMERO, SEDE } from '../config';
-import { generarTokenYape } from '../utils/yape';
+import { generarTokenYape, cargarSeguridadMP, obtenerDeviceId } from '../utils/yape';
 import { cerrarAlTocarFuera } from '../utils/modal';
 import es from 'date-fns/locale/es';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -74,6 +74,9 @@ const Cita = () => {
   const [nivelesClub, setNivelesClub] = useState(NIVELES_FIDELIDAD);
   const [mostrarClubPopup, setMostrarClubPopup] = useState(false);
   const [descuentoAplicado, setDescuentoAplicado] = useState(0);
+
+  // Seguridad de Mercado Pago: se carga con anticipación para que el ID del dispositivo esté listo al pagar
+  useEffect(() => { cargarSeguridadMP(); }, []);
 
   // El monto lo define el backend (variable RESERVA_MONTO); aquí solo se muestra
   useEffect(() => {
@@ -257,7 +260,8 @@ const Cita = () => {
           hora_cita: hora,
           celular_yape: celularPago,
           yape_token: yapeTokenId,
-          servicio_id: servicioSel.id
+          servicio_id: servicioSel.id,
+          device_id: obtenerDeviceId()
         }),
       });
       resData = await response.json().catch(() => ({}));

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaPhone, FaLock } from 'react-icons/fa';
 import '../styles/PagoYape.css';
-import { generarTokenYape } from '../utils/yape';
+import { generarTokenYape, cargarSeguridadMP } from '../utils/yape';
 import { soles } from '../utils/servicios';
 
 // Formulario de pago con Yape (celular + código de aprobación).
@@ -11,6 +11,8 @@ const PagoYape = ({ monto, onPagar, textoBoton, compacto = false }) => {
   const [otp, setOtp] = useState('');
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => { cargarSeguridadMP(); }, []);
 
   const listo = celular.length === 9 && otp.length === 6 && !cargando;
 

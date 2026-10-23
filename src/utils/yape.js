@@ -35,3 +35,17 @@ export const generarTokenYape = async (celular, otp) => {
       : 'El pago con Yape aún no está configurado (falta la Public Key de Mercado Pago).');
   }
 };
+
+// 🛡️ Script de seguridad de Mercado Pago: identifica el dispositivo (MP_DEVICE_SESSION_ID) y ayuda a
+// que el antifraude apruebe los pagos. Se carga una sola vez, con anticipación al pago.
+export const cargarSeguridadMP = () => {
+  if (document.getElementById('mp-security-js')) return;
+  const script = document.createElement('script');
+  script.id = 'mp-security-js';
+  script.src = 'https://www.mercadopago.com/v2/security.js';
+  script.setAttribute('view', 'checkout');
+  script.async = true;
+  document.body.appendChild(script);
+};
+
+export const obtenerDeviceId = () => window.MP_DEVICE_SESSION_ID || undefined;

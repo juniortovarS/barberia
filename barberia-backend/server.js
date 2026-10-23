@@ -263,26 +263,38 @@ const MENSAJES_RECHAZO = {
   processing_error: "Yape no pudo procesar el pago. Inténtalo de nuevo en unos minutos.",
   rejected_by_issuer: "Yape rechazó el pago. Verifica que el celular sea el de tu cuenta Yape y genera un código nuevo.",
 };
+// Rechazo del antifraude de Mercado Pago (el nombre varía según la API)
+["high_risk", "cc_rejected_high_risk", "rejected_high_risk"].forEach((k) => {
+  MENSAJES_RECHAZO[k] = "Mercado Pago bloqueó el pago por seguridad. Espera unos minutos antes de reintentar (varios intentos seguidos empeoran el bloqueo) o usa otra cuenta Yape.";
+});
 
 // Devuelve { ok: true, id } o { ok: false, status, error }
-const cobrarYape = async ({ monto, email, celular, token, referencia }) => {
+// `descripcion` y `deviceId` ayudan al antifraude de Mercado Pago a aprobar el pago
+const cobrarYape = async ({ monto, email, celular, token, referencia, descripcion, deviceId }) => {
   const importe = redondear(monto).toFixed(2);
+  const detalle = descripcion || "Reserva Barber Studio JP";
   let orden;
   try {
+    const headers = {
+      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+      "X-Idempotency-Key": crypto.randomUUID(),
+    };
+    if (deviceId) headers["X-meli-session-id"] = String(deviceId).slice(0, 200);
+
     const mpResponse = await fetch("https://api.mercadopago.com/v1/orders", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-        "X-Idempotency-Key": crypto.randomUUID(),
-      },
+      headers,
       body: JSON.stringify({
         type: "online",
         processing_mode: "automatic",
         external_reference: referencia,
         total_amount: importe,
+        description: detalle,
+        items: [{ title: detalle, unit_price: importe, quantity: 1 }],
         payer: {
           email,
+          entity_type: "individual",
           phone: { area_code: "51", number: String(celular).replace(/\D/g, "").slice(-9) },
         },
         transactions: {
@@ -355,7 +367,7 @@ app.get("/fidelidad", async (req, res) => {
 
 // 💜 Nueva reserva: se cobra el adelanto con Yape y solo se guarda si Mercado Pago lo aprueba
 app.post("/reservas/pagar-yape", async (req, res) => {
-  const { nombre, celular, email, fecha_cita, hora_cita, yape_token, celular_yape, servicio_id } = req.body;
+  const { nombre, celular, email, fecha_cita, hora_cita, yape_token, celular_yape, servicio_id, device_id } = req.body;
 
   if (!nombre || !celular || !email || !fecha_cita || !hora_cita || !yape_token || !servicio_id) {
     return res.status(400).json({ error: "⚠️ Faltan datos obligatorios" });
@@ -388,7 +400,15 @@ app.post("/reservas/pagar-yape", async (req, res) => {
   const { total, adelanto, saldo } = calcularMontos(servicio, descuentoPct);
   const codigo = generarCodigo();
 
-  const cobro = await cobrarYape({ monto: adelanto, email, celular: celular_yape || celular, token: yape_token, referencia: codigo });
+  const cobro = await cobrarYape({
+    monto: adelanto,
+    email,
+    celular: celular_yape || celular,
+    token: yape_token,
+    referencia: codigo,
+    descripcion: `Adelanto ${servicio.nombre} - ${fecha_cita} ${hora_cita}`,
+    deviceId: device_id,
+  });
   if (!cobro.ok) return res.status(cobro.status).json({ error: cobro.error });
 
   const estado = "approved";
@@ -447,7 +467,7 @@ app.post("/reservas/pagar-yape", async (req, res) => {
 app.post("/reservas/:id/pagar-saldo", async (req, res) => {
   const user = await obtenerUsuario(req);
   if (!user?.email) return res.status(401).json({ error: "Inicia sesión para pagar" });
-  const { yape_token, celular_yape } = req.body;
+  const { yape_token, celular_yape, device_id } = req.body;
   if (!yape_token || !celular_yape) return res.status(400).json({ error: "⚠️ Faltan los datos de Yape" });
   if (!MP_ACCESS_TOKEN) return res.status(503).json({ error: "El pago con Yape no está configurado todavía." });
 
@@ -467,6 +487,8 @@ app.post("/reservas/:id/pagar-saldo", async (req, res) => {
     celular: celular_yape,
     token: yape_token,
     referencia: `${reserva.codigo || reserva.id}-SALDO`,
+    descripcion: `Restante ${reserva.servicio || 'servicio'} - ${reserva.fecha_cita}`,
+    deviceId: device_id,
   });
   if (!cobro.ok) return res.status(cobro.status).json({ error: cobro.error });
 
