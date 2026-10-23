@@ -272,7 +272,7 @@ const MENSAJES_RECHAZO = {
 // `descripcion` y `deviceId` ayudan al antifraude de Mercado Pago a aprobar el pago
 const cobrarYape = async ({ monto, email, celular, token, referencia, descripcion, deviceId }) => {
   const importe = redondear(monto).toFixed(2);
-  const detalle = descripcion || "Reserva Barber Studio JP";
+  const concepto = descripcion || "Reserva Barber Studio JP";
   let orden;
   try {
     const headers = {
@@ -290,8 +290,8 @@ const cobrarYape = async ({ monto, email, celular, token, referencia, descripcio
         processing_mode: "automatic",
         external_reference: referencia,
         total_amount: importe,
-        description: detalle,
-        items: [{ title: detalle, unit_price: importe, quantity: 1 }],
+        description: concepto,
+        items: [{ title: concepto, unit_price: importe, quantity: 1 }],
         payer: {
           email,
           entity_type: "individual",
