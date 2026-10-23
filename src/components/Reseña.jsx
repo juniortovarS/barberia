@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import '../styles/Reseña.css';
 
-import rese1 from '../assets/rese1.png';
-import rese2 from '../assets/rese2.png';
-import rese3 from '../assets/rese3.png';
-import ScissorTransition from './ScissorTransition';
+import rese1 from '../assets/rese1.webp';
+import rese2 from '../assets/rese2.webp';
+import rese3 from '../assets/rese3.webp';
+// La animación (Remotion) es pesada: se descarga solo la primera vez que se usa
+const ScissorTransition = lazy(() => import('./ScissorTransition'));
 
 const testimonios = [
   {
@@ -89,7 +90,11 @@ const Reseñas = () => {
         ))}
       </div>
 
-      <ScissorTransition play={animando} />
+      {animando && (
+        <Suspense fallback={null}>
+          <ScissorTransition play />
+        </Suspense>
+      )}
     </section>
   );
 };

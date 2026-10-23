@@ -1,8 +1,8 @@
 import React from 'react';
 import '../styles/Blog.css';
 import blogVideo from '../assets/blog.mp4';
-import blog2 from '../assets/blog2.png';
-import blog3 from '../assets/blog3.png';
+import blog2 from '../assets/blog2.webp';
+import blog3 from '../assets/blog3.webp';
 import Footer from '../components/Footer';
 
 const Blog = () => {

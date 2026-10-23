@@ -42,12 +42,42 @@ code {
     monospace;
 }
 
-/* 🚀 Scroll Reveal Animation System */
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+/* Barra de carga entre páginas */
+.page-loader {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: 3000;
+  overflow: hidden;
+}
+
+.page-loader-bar {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, #ffffff, transparent);
+  animation: pageLoader 0.9s ease-in-out infinite;
+}
+
+@keyframes pageLoader {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
+/* 🚀 Scroll Reveal Animation System (cada elemento se anima una sola vez) */
 .reveal {
   opacity: 0;
-  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), 
-              transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, opacity;
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .reveal.fade-up {
@@ -110,3 +140,14 @@ code {
 
 
 
+
+/* Accesibilidad: quien prefiere menos movimiento no ve animaciones */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}

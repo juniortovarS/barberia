@@ -8,7 +8,7 @@
   width: 100%;
   position: relative;
   overflow: hidden;
-  background-image: url('../assets/cita.png');
+  background-image: url('../assets/cita.webp');
   background-size: cover;
   background-position: center;
 }
@@ -69,8 +69,7 @@
   align-items: center;
   border: 1px solid #ffffff;
   cursor: pointer;
-  background: rgba(10, 10, 10, 0.5);
-  backdrop-filter: blur(5px);
+  background: rgba(10, 10, 10, 0.6);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
   overflow: hidden;
@@ -119,14 +118,13 @@
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(5, 5, 5, 0.82);
+  background: rgba(4, 4, 5, 0.94);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   padding: 20px;
+  overscroll-behavior: contain;
   box-sizing: border-box;
   animation: fadeIn 0.4s ease-out forwards;
   overflow-y: auto;
@@ -135,14 +133,15 @@
 
 /* Glassmorphism Wizard Container */
 .wizard-box {
-  background: rgba(18, 18, 18, 0.75) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: linear-gradient(180deg, #151516 0%, #0f0f10 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   padding: 40px 35px !important;
   border-radius: 24px !important;
   color: var(--text-primary);
   width: 100%;
   max-width: 550px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 255, 255, 0.03);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+  overscroll-behavior: contain;
   box-sizing: border-box;
   text-align: center;
   position: relative;
@@ -168,17 +167,7 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
-.wizard-box::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
+
 
 /* Progress indicator bar */
 .wizard-progress {
@@ -1405,4 +1394,68 @@
 .detectado-ok {
   color: #00d7bd !important;
   text-shadow: 0 0 8px rgba(0, 215, 189, 0.15) !important;
+}
+
+/* Pago Yape con código de aprobación */
+.yape-pago-card {
+  background: linear-gradient(160deg, rgba(116, 37, 130, 0.18), rgba(116, 37, 130, 0.04));
+  border: 1px solid rgba(157, 60, 176, 0.35);
+  border-radius: 16px;
+  padding: 18px 20px 6px;
+  margin-bottom: 22px;
+  text-align: left;
+}
+
+.yape-pago-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.yape-logo {
+  background-color: #742582;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+  padding: 4px 14px;
+  border-radius: 999px;
+}
+
+.yape-pago-monto {
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.yape-pasos {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  color: #c9c9c9;
+  font-size: 0.86rem;
+  line-height: 1.7;
+}
+
+.yape-pasos strong {
+  color: #d68bf2;
+}
+
+.yape-otp-input {
+  letter-spacing: 6px;
+  font-family: monospace !important;
+  font-size: 1.1rem !important;
+}
+
+.yape-otp-input::placeholder {
+  letter-spacing: normal;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+
+.yape-pago-nota {
+  font-size: 0.76rem;
+  color: #9a9a9a;
+  line-height: 1.5;
+  margin: -6px 0 14px;
 }

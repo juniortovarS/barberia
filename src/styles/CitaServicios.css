@@ -1,0 +1,155 @@
+/* =========================================================
+   RESERVA: lista de servicios y desglose del pago
+   ========================================================= */
+.servicios-lista {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+}
+
+.servicio-opcion {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.025);
+  color: #ffffff;
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  box-sizing: border-box;
+}
+
+.servicio-opcion:hover:not(.active) {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.servicio-opcion:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+
+.servicio-opcion.active {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.servicio-check {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.07);
+  color: #cfcfcf;
+}
+
+.servicio-opcion.active .servicio-check { background: #0a0a0a; color: #ffffff; }
+
+.servicio-info {
+  color: inherit !important;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.servicio-nombre {
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: inherit !important;
+}
+
+.servicio-duracion {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  color: #8a8a8a;
+}
+
+.servicio-opcion.active .servicio-duracion { color: #555555; }
+
+.servicio-precio {
+  font-size: 0.98rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: inherit !important;
+  white-space: nowrap;
+}
+
+/* Desglose */
+.desglose-pago {
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px 16px 14px;
+  margin-bottom: 18px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.desglose-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.86rem;
+  color: #cfcfcf;
+  padding: 4px 0;
+}
+
+.desglose-fila span { color: inherit; }
+.desglose-fila em { font-style: normal; color: #7a7a7a; }
+.desglose-fila.descuento { color: #e3b95b; }
+
+.desglose-fila.total {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.desglose-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.desglose-split > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+
+.desglose-split span { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; }
+.desglose-split strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+
+.desglose-hoy { background: #ffffff; }
+.desglose-hoy span { color: #555555; }
+.desglose-hoy strong { color: #0a0a0a; }
+
+.desglose-despues { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
+.desglose-despues span { color: #8a8a8a; }
+.desglose-despues strong { color: #ffffff; }
+
+.resumen-item a { color: #ffffff; text-decoration: underline; text-underline-offset: 3px; }
+.resumen-restante span:last-child { color: #e3b95b !important; font-weight: 700; }
+
+@media (max-width: 580px) {
+  .servicios-lista { max-height: 50vh; }
+  .servicio-opcion { gap: 10px; padding: 12px; }
+  .servicio-check { width: 30px; height: 30px; }
+  .desglose-split strong { font-size: 1.1rem; }
+}

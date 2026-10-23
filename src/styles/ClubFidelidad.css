@@ -1,0 +1,275 @@
+.club-section {
+  position: relative;
+  padding: 110px 24px;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(227, 185, 91, 0.08), transparent 70%),
+    #070708;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.club-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.club-header {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 56px;
+}
+
+.club-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #e3b95b;
+}
+
+.club-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 14px 0 14px;
+  line-height: 1.05;
+}
+
+.club-subtitle {
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.club-niveles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 56px;
+}
+
+.club-nivel {
+  --nivel: #9a9a9a;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 28px 22px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.club-nivel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 18px 18px 0 0;
+  background: var(--nivel);
+  opacity: 0.85;
+}
+
+.club-nivel:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.club-nivel.nivel-plata { --nivel: #d7dce2; }
+.club-nivel.nivel-oro { --nivel: #e3b95b; }
+.club-nivel.nivel-black {
+  --nivel: #ffffff;
+  background: linear-gradient(180deg, #1a1a1b, #0c0c0d);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.club-nivel.actual {
+  border-color: var(--nivel);
+  box-shadow: 0 0 0 1px var(--nivel), 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.club-nivel-tag {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--nivel);
+  color: #0a0a0a;
+}
+
+.club-nivel-nombre {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--nivel);
+}
+
+.club-nivel-descuento {
+  font-family: var(--font-heading);
+  font-size: 2.6rem;
+  font-weight: 400;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.club-nivel:first-child .club-nivel-descuento {
+  font-size: 1.7rem;
+  padding: 6px 0 5px;
+}
+
+.club-nivel-req {
+  font-size: 0.85rem;
+  color: #8a8a8a;
+}
+
+.club-pasos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 48px;
+}
+
+.club-paso {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.015);
+  position: relative;
+}
+
+.club-paso-num {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  color: rgba(255, 255, 255, 0.07);
+}
+
+.club-paso-icono {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.club-paso h3 {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 2px 0 4px;
+}
+
+.club-paso p {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.club-cta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.club-btn-primario,
+.club-btn-secundario {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 30px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.club-btn-primario {
+  border: 1px solid #ffffff;
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.club-btn-primario:hover { transform: translateY(-2px); }
+
+.club-btn-secundario {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+}
+
+.club-btn-secundario:hover {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.club-progreso-card {
+  min-width: min(420px, 100%);
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(227, 185, 91, 0.3);
+  background: rgba(227, 185, 91, 0.06);
+  box-sizing: border-box;
+}
+
+.club-progreso-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.84rem;
+  margin-bottom: 10px;
+}
+
+.club-progreso-top strong { color: #e3b95b; }
+
+.club-progreso-barra {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.club-progreso-barra span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #c9973a, #f3d48a);
+  border-radius: inherit;
+}
+
+@media (max-width: 900px) {
+  .club-niveles { grid-template-columns: repeat(2, 1fr); }
+  .club-pasos { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .club-section { padding: 80px 16px; }
+  .club-niveles { gap: 10px; }
+  .club-nivel { padding: 22px 16px; }
+  .club-nivel-descuento { font-size: 2.1rem; }
+  .club-btn-primario, .club-btn-secundario { width: 100%; justify-content: center; }
+}

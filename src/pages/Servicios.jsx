@@ -2,12 +2,12 @@ import React from 'react';
 import '../styles/Servicios.css';
 import Footer from '../components/Footer';
 
-import cu1 from '../assets/cu1.png';
-import cu2 from '../assets/cu2.png';
-import cu3 from '../assets/cu3.png';
-import cu4 from '../assets/cu4.png';
-import cu5 from '../assets/cu5.png';
-import cu6 from '../assets/cu6.png';
+import cu1 from '../assets/cu1.webp';
+import cu2 from '../assets/cu2.webp';
+import cu3 from '../assets/cu3.webp';
+import cu4 from '../assets/cu4.webp';
+import cu5 from '../assets/cu5.webp';
+import cu6 from '../assets/cu6.webp';
 
 const servicios = [
 

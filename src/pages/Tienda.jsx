@@ -1,8 +1,8 @@
 
 import React from "react";
-import produc1 from "../assets/produc1.png";
-import produc2 from "../assets/produc2.png";
-import tiendaHeader from "../assets/tienda.png"; // Tu imagen full ancho
+import produc1 from "../assets/produc1.webp";
+import produc2 from "../assets/produc2.webp";
+import tiendaHeader from "../assets/tienda.webp"; // Tu imagen full ancho
 import "../styles/Tienda.css";
 import { useCarrito } from "../components/CarritoContext";
 

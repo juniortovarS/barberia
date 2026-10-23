@@ -1,6 +1,7 @@
 import React from 'react';
 import '../styles/Footer.css';
 import { FaInstagram, FaFacebookF, FaTiktok, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from 'react-icons/fa';
+import { resumenHorario } from '../utils/horario';
 
 
 const Footer = () => {
@@ -20,9 +21,9 @@ const Footer = () => {
         <div className="footer-horario">
   <h4>Horarios</h4>
   <ul>
-    <li>Lun - Vie: 9:00 AM - 8:00 PM</li>
-    <li>Sábados: 9:00 AM - 6:00 PM</li>
-    <li>Domingos: Cerrado</li>
+    {resumenHorario().map((h) => (
+      <li key={h.dias}>{h.dias}: {h.texto}</li>
+    ))}
   </ul>
 </div>
 

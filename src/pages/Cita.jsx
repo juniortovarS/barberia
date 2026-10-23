@@ -1,69 +1,42 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import '../styles/Cita.css';
-import { FaCalendarCheck, FaArrowRight, FaArrowLeft, FaCheck, FaUser, FaPhone, FaEnvelope, FaCalendarAlt, FaClock, FaWhatsapp } from 'react-icons/fa';
+import '../styles/CitaPro.css';
+import '../styles/CitaServicios.css';
+import { FaCalendarCheck, FaArrowRight, FaArrowLeft, FaCheck, FaUser, FaPhone, FaEnvelope, FaCalendarAlt, FaWhatsapp, FaLock, FaSun, FaCloudSun, FaMoon, FaGift, FaCrown, FaTimes, FaCut, FaHourglassHalf } from 'react-icons/fa';
 import DatePicker, { registerLocale } from 'react-datepicker';
-import { API_URL } from '../config';
+import { API_URL, WHATSAPP_NUMERO, SEDE } from '../config';
+import { generarTokenYape } from '../utils/yape';
 import es from 'date-fns/locale/es';
 import 'react-datepicker/dist/react-datepicker.css';
 import emailjs from '@emailjs/browser';
-import yapeQr from '../assets/yape_qr.png';
-import { createWorker } from 'tesseract.js';
 import { useAuth } from '../components/AuthContext';
-import { supabase } from '../supabaseClient';
+import { turnosDelDia, estaAbierto, fechaISO, DIAS_MAXIMOS_RESERVA } from '../utils/horario';
+import { useFidelidad, cabeceraSesion, abrirRegistro, progresoNivel, NIVELES_FIDELIDAD } from '../utils/fidelidad';
+import { SERVICIOS, duracionTexto, soles, calcularMontos } from '../utils/servicios';
+
+// Turnos del día para el selector de hora
+const TURNOS = [
+  { id: 'manana', etiqueta: 'Mañana', icono: <FaSun />, desde: 0, hasta: 12 * 60 },
+  { id: 'tarde', etiqueta: 'Tarde', icono: <FaCloudSun />, desde: 12 * 60, hasta: 18 * 60 },
+  { id: 'noche', etiqueta: 'Noche', icono: <FaMoon />, desde: 18 * 60, hasta: 24 * 60 },
+];
+
+const slugNivel = (nombre = '') => nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // Registrar localización en español para el calendario
 registerLocale('es', es);
 
 // Coloca aquí la URL generada en tu Google Apps Script
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8N9xXL_pBpU_M7Oc37FGyNp2UZnr_F31pwa-M-hM_4f3xamctY24N9fe-JMzmNjNbkg/exec"; 
-
-// Función para comprimir la captura de pantalla y convertirla a base64 liviano (< 30KB)
-const comprimirImagen = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 400;
-        const MAX_HEIGHT = 600;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Exportar a JPEG con calidad 0.6 (súper liviano y legible)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        resolve(dataUrl);
-      };
-      img.onerror = (err) => reject(err);
-    };
-    reader.onerror = (err) => reject(err);
-  });
-};
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8N9xXL_pBpU_M7Oc37FGyNp2UZnr_F31pwa-M-hM_4f3xamctY24N9fe-JMzmNjNbkg/exec";
 
 const Cita = () => {
   const { user } = useAuth();
   const formRef = useRef();
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [paso, setPaso] = useState(1); // 1: Datos, 2: Fecha, 3: Hora, 4: Pago
+  const [paso, setPaso] = useState(0); // 0: Servicio, 1: Datos, 2: Fecha, 3: Hora, 4: Pago
+  const [servicios, setServicios] = useState(SERVICIOS);
+  const [servicioId, setServicioId] = useState('');
+  const [pagoConfirmado, setPagoConfirmado] = useState(null); // montos que confirmó el servidor
   const [fechaSeleccionada, setFechaSeleccionada] = useState(null);
   const [horaSeleccionada, setHoraSeleccionada] = useState('');
   const [nombre, setNombre] = useState('');
@@ -85,187 +58,115 @@ const Cita = () => {
       }
     }
   }, [user, mostrarFormulario]);
-  const [metodoPago, setMetodoPago] = useState('yape'); // 'yape' o 'plin'
   const [celularPago, setCelularPago] = useState('');
-  const [capturaPreview, setCapturaPreview] = useState(null);
-  const [capturaBase64, setCapturaBase64] = useState('');
-  const [codigoReserva, setCodigoReserva] = useState('');
-  const [estadoReserva, setEstadoReserva] = useState('pending'); // 'pending' o 'approved'
-  const [ocrStatus, setOcrStatus] = useState('');
-  const [ocrResultado, setOcrResultado] = useState(null); // { success: boolean, message: string }
-  const [ocrMetadatos, setOcrMetadatos] = useState(null); // { tipoPago: string, fecha: string, hora: string, codigo: string, monto: string }
-  const [dragging, setDragging] = useState(false);
-  const [copiado, setCopiado] = useState(false);
+  const [otpYape, setOtpYape] = useState('');
+  const [montoReserva, setMontoReserva] = useState(20);
+  const [codigoConfirmado, setCodigoConfirmado] = useState('');
 
-  const copiarAlPortapapeles = (texto) => {
-    navigator.clipboard.writeText(texto);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
-  };
+  // Disponibilidad de horarios del día elegido
+  const [bloques, setBloques] = useState([]);
+  const [cargandoHoras, setCargandoHoras] = useState(false);
+  const [turnoActivo, setTurnoActivo] = useState('manana');
 
-  const procesarArchivoVoucher = async (file) => {
-    setError(null);
-    setOcrResultado(null);
-    setOcrMetadatos(null);
-    setOcrStatus('Comprimiendo imagen...');
+  // Club de fidelidad
+  const { fidelidad, setFidelidad } = useFidelidad();
+  const [nivelesClub, setNivelesClub] = useState(NIVELES_FIDELIDAD);
+  const [mostrarClubPopup, setMostrarClubPopup] = useState(false);
+  const [descuentoAplicado, setDescuentoAplicado] = useState(0);
 
-    setCapturaPreview(URL.createObjectURL(file));
+  // El monto lo define el backend (variable RESERVA_MONTO); aquí solo se muestra
+  useEffect(() => {
+    fetch(`${API_URL}/config-pago`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => {
+        if (cfg?.monto) setMontoReserva(cfg.monto);
+        if (Array.isArray(cfg?.niveles)) setNivelesClub(cfg.niveles);
+        if (Array.isArray(cfg?.servicios) && cfg.servicios.length) setServicios(cfg.servicios);
+      })
+      .catch(() => {});
+  }, []);
 
-    try {
-      // 1. Comprimir imagen para guardar en Supabase Storage
-      const base64 = await comprimirImagen(file);
-      setCapturaBase64(base64);
+  const servicioSel = servicios.find((sv) => sv.id === servicioId) || null;
+  const montos = servicioSel
+    ? calcularMontos(servicioSel.precio, user ? fidelidad?.descuento : 0, montoReserva)
+    : null;
 
-      // 2. Ejecutar OCR usando Tesseract.js
-      setOcrStatus('Iniciando lector OCR...');
-      const worker = await createWorker('spa'); // Idioma Español
+  // Horas ocupadas del día elegido (se consultan al backend, sin datos personales)
+  useEffect(() => {
+    if (!fechaSeleccionada) return undefined;
+    let cancelado = false;
+    setCargandoHoras(true);
+    fetch(`${API_URL}/disponibilidad?fecha=${fechaISO(fechaSeleccionada)}`)
+      .then((r) => (r.ok ? r.json() : { bloques: [] }))
+      .then((d) => { if (!cancelado) setBloques(d.bloques || []); })
+      .catch(() => { if (!cancelado) setBloques([]); })
+      .finally(() => { if (!cancelado) setCargandoHoras(false); });
+    return () => { cancelado = true; };
+  }, [fechaSeleccionada, paso]);
 
-      setOcrStatus('Analizando comprobante...');
-      
-      const { data: { text } } = await worker.recognize(file);
-      await worker.terminate();
+  const turnos = useMemo(
+    () => (fechaSeleccionada ? turnosDelDia(fechaSeleccionada, bloques, servicioSel?.duracion) : []),
+    [fechaSeleccionada, bloques, servicioSel]
+  );
 
-      console.log("📝 Texto extraído del voucher por OCR:\n", text);
+  const turnosPorBloque = useMemo(() => TURNOS.map((t) => {
+    const lista = turnos.filter((x) => x.minutos >= t.desde && x.minutos < t.hasta);
+    return { ...t, lista, libres: lista.filter((x) => !x.pasado && !x.ocupado).length };
+  }), [turnos]);
 
-      // 3. Validar contenido
-      // Limpiamos espacios, guiones y pasamos a minúsculas
-      const textClean = text.toLowerCase().replace(/[\s.-]+/g, '');
-      const codigoClean = codigoReserva.toLowerCase().replace(/[\s.-]+/g, '');
-      
-      // Buscar monto de S/ 1 o S/ 1.00 (soporta variaciones de lectura del símbolo S/ como s1, s/1, s|1, si1, sl1, etc.)
-      // Si Tesseract no lee el número "1" por tamaño, confiamos en palabras clave de la transacción Yape/Plin
-      const contieneMonto = 
-        textClean.includes('s/1') || 
-        textClean.includes('s1') || 
-        textClean.includes('s|1') || 
-        textClean.includes('s\\1') || 
-        textClean.includes('si1') || 
-        textClean.includes('sl1') ||
-        textClean.includes('100') ||
-        textClean.includes('1,00') ||
-        textClean.includes('s/100') ||
-        textClean.includes('s100') ||
-        textClean.includes('s|100') ||
-        textClean.includes('s\\100') ||
-        textClean.includes('si100') ||
-        textClean.includes('sl100') ||
-        textClean.includes('s/.1') ||
-        textClean.includes('s.1') ||
-        textClean.includes('yapeaste') ||
-        textClean.includes('nrodeoperación') ||
-        textClean.includes('nrodeoperacion') ||
-        textClean.includes('transacción') ||
-        textClean.includes('transaccion') ||
-        textClean.includes('plin') ||
-        textClean.includes('transferencia') ||
-        textClean.includes('monto') ||
-        textClean.includes('destino');
+  // Al cambiar de día se abre automáticamente el primer turno con horas libres
+  useEffect(() => {
+    const primero = turnosPorBloque.find((t) => t.libres > 0);
+    if (primero) setTurnoActivo(primero.id);
+  }, [fechaSeleccionada, turnosPorBloque]);
 
-      // Buscar código de reserva (ej. RES-4821 -> res4821)
-      const contieneCodigo = textClean.includes(codigoClean);
-
-      // Extraer metadatos para mostrar en la interfaz
-      const textLower = text.toLowerCase();
-      
-      let tipoPago = 'No detectado';
-      if (textLower.includes('yapeaste') || textLower.includes('yape')) {
-        tipoPago = 'Yape';
-      } else if (textLower.includes('plin') || textLower.includes('transferencia')) {
-        tipoPago = 'Plin';
-      }
-
-      // Detectar Fecha
-      let fechaDetectada = 'No detectada';
-      const dateRegex1 = /(\d{1,2})\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[a-z]*\.?\s+(\d{4})/i;
-      const dateRegex2 = /(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/i;
-      const matchDate1 = text.match(dateRegex1);
-      if (matchDate1) {
-        fechaDetectada = matchDate1[0];
-      } else {
-        const matchDate2 = text.match(dateRegex2);
-        if (matchDate2) {
-          fechaDetectada = matchDate2[0];
-        }
-      }
-
-      // Detectar Hora (Prioriza formato am/pm del comprobante para ignorar la barra de estado de 24h del teléfono)
-      let horaDetectada = 'No detectada';
-      const timeRegexAmpm = /(\d{1,2}:\d{2})\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)/i;
-      const timeRegexNormal = /(\d{1,2}:\d{2})/i;
-      
-      const matchTimeAmpm = text.match(timeRegexAmpm);
-      if (matchTimeAmpm) {
-        horaDetectada = matchTimeAmpm[0];
-      } else {
-        const matchTimeNormal = text.match(timeRegexNormal);
-        if (matchTimeNormal) {
-          horaDetectada = matchTimeNormal[0];
-        }
-      }
-
-      setOcrMetadatos({
-        tipoPago,
-        fecha: fechaDetectada,
-        hora: horaDetectada,
-        codigo: contieneCodigo ? codigoReserva : 'No detectado',
-        monto: contieneMonto ? 'S/ 1.00 (Verificado)' : 'No detectado'
-      });
-
-      if (contieneMonto && contieneCodigo) {
-        setEstadoReserva('approved');
-        setOcrStatus('');
-        setOcrResultado({ success: true, message: 'Pago verificado automáticamente. Tu reserva será aprobada de inmediato.' });
-      } else {
-        setEstadoReserva('pending');
-        setOcrStatus('');
-        
-        let errorMsg = 'No pudimos validar el pago automáticamente.';
-        if (!contieneCodigo) {
-          errorMsg += ` Falta el código "${codigoReserva}" en la imagen.`;
-        } else if (!contieneMonto) {
-          errorMsg += ' No se detectó el monto de S/ 1.00 o los indicadores de pago.';
-        }
-        setOcrResultado({ success: false, message: errorMsg });
-      }
-    } catch (err) {
-      console.error("❌ Error de OCR con Tesseract.js:", err);
-      setEstadoReserva('pending');
-      setOcrStatus('');
-      setOcrResultado({ success: false, message: 'Error al leer el comprobante. El administrador lo revisará manualmente.' });
+  // Si la hora elegida acaba de ocuparse, se deselecciona
+  useEffect(() => {
+    if (!horaSeleccionada) return;
+    const elegido = turnos.find((t) => t.etiqueta === horaSeleccionada);
+    if (elegido && (elegido.ocupado || elegido.pasado)) {
+      setHoraSeleccionada('');
+      setError('⚠️ La hora que elegiste ya no está disponible. Elige otra.');
     }
-  };
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    await procesarArchivoVoucher(file);
-  };
-
-  const removerCaptura = () => {
-    if (capturaPreview) {
-      URL.revokeObjectURL(capturaPreview);
-    }
-    setCapturaPreview(null);
-    setCapturaBase64('');
-    setOcrStatus('');
-    setOcrResultado(null);
-    setOcrMetadatos(null);
-    setEstadoReserva('pending');
-  };
+  }, [turnos, horaSeleccionada]);
 
   const toggleFormulario = () => {
-    setMostrarFormulario(!mostrarFormulario);
-    setPaso(1);
+    const abrir = !mostrarFormulario;
+    setMostrarFormulario(abrir);
+    setPaso(0);
     setError(null);
-    removerCaptura();
     setCelularPago('');
-    setMetodoPago('yape');
-    setCodigoReserva('');
+    setOtpYape('');
+    // Invitar a registrarse al Club (una vez por visita)
+    if (abrir && !user) {
+      let visto = false;
+      try { visto = sessionStorage.getItem('club-popup-visto') === '1'; } catch { /* sin almacenamiento */ }
+      if (!visto) setMostrarClubPopup(true);
+    }
+  };
+
+  const cerrarClubPopup = () => {
+    try { sessionStorage.setItem('club-popup-visto', '1'); } catch { /* sin almacenamiento */ }
+    setMostrarClubPopup(false);
+  };
+
+  const irARegistro = (registro = true) => {
+    cerrarClubPopup();
+    setMostrarFormulario(false);
+    setConfirmacionVisible(false);
+    abrirRegistro(registro);
   };
 
   const nextPaso = (e) => {
     e.preventDefault();
-    if (paso === 1) {
+    if (paso === 0) {
+      if (!servicioSel) {
+        setError("⚠️ Elige el servicio que quieres reservar.");
+        return;
+      }
+      setError(null);
+      setPaso(1);
+    } else if (paso === 1) {
       if (!nombre || !celular || !email) {
         setError("⚠️ Por favor completa todos los campos de contacto.");
         return;
@@ -288,6 +189,10 @@ const Cita = () => {
         setError("⚠️ Por favor selecciona una fecha para tu cita.");
         return;
       }
+      if (!estaAbierto(fechaSeleccionada)) {
+        setError("⚠️ Ese día no atendemos. Elige otra fecha.");
+        return;
+      }
       setError(null);
       setPaso(3);
     }
@@ -296,7 +201,7 @@ const Cita = () => {
   const prevPaso = (e) => {
     e.preventDefault();
     setError(null);
-    setPaso(prev => Math.max(1, prev - 1));
+    setPaso(prev => Math.max(0, prev - 1));
   };
 
   const handleSubmit = async (e) => {
@@ -308,13 +213,13 @@ const Cita = () => {
       return;
     }
 
-    if (!celularPago || celularPago.length < 9) {
-      setError("⚠️ Por favor ingresa el número de celular del pago (9 dígitos).");
+    if (celularPago.length !== 9) {
+      setError("⚠️ Ingresa el celular de tu cuenta Yape (9 dígitos).");
       return;
     }
 
-    if (!capturaBase64) {
-      setError("⚠️ Por favor adjunta la captura del pago (voucher).");
+    if (otpYape.length !== 6) {
+      setError("⚠️ Ingresa el código de aprobación de 6 dígitos que aparece en tu app de Yape.");
       return;
     }
 
@@ -326,8 +231,62 @@ const Cita = () => {
     const fecha = `${year}-${month}-${day}`;
     const hora = horaSeleccionada;
 
+    // 1. Cobrar el adelanto con Yape: el token se genera aquí y el backend cobra con Mercado Pago.
+    //    La reserva solo se guarda (como aprobada) si Mercado Pago aprueba el pago.
+    let yapeTokenId;
+    try {
+      yapeTokenId = await generarTokenYape(celularPago, otpYape);
+    } catch (err) {
+      setError(`❌ ${err.message}`);
+      setOtpYape('');
+      setLoading(false);
+      return;
+    }
+
+    let resData;
+    try {
+      const response = await fetch(`${API_URL}/reservas/pagar-yape`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await cabeceraSesion()) },
+        body: JSON.stringify({
+          nombre,
+          celular,
+          email,
+          fecha_cita: fecha,
+          hora_cita: hora,
+          celular_yape: celularPago,
+          yape_token: yapeTokenId,
+          servicio_id: servicioSel.id
+        }),
+      });
+      resData = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(`❌ ${resData.error || 'No se pudo completar el pago con Yape.'}`);
+        setOtpYape('');
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      // No se llegó a cobrar: el servidor no respondió
+      console.error(`❌ No se pudo conectar con el backend (${API_URL}):`, err);
+      setError('❌ No pudimos conectar con el servidor de reservas. No se realizó ningún cobro; inténtalo en unos segundos.');
+      setOtpYape('');
+      setLoading(false);
+      return;
+    }
+
+    const codigoReserva = resData.codigo;
+    const estadoReserva = 'approved';
+    const metodoPago = 'yape';
+    setCodigoConfirmado(codigoReserva);
+    setDescuentoAplicado(resData.descuento_aplicado || 0);
+    setPagoConfirmado({ total: resData.total, adelanto: resData.adelanto, saldo: resData.saldo });
+    if (resData.fidelidad) setFidelidad({ ...resData.fidelidad, niveles: nivelesClub });
+    const notaClub = resData.descuento_aplicado ? ` - CLUB ${resData.descuento_aplicado}% DSCTO` : '';
+
+
     // Nombre con los datos de pago integrados de forma limpia para Supabase y Twilio
-    const nombreCompletoConPago = `${nombre} (${metodoPago.toUpperCase()} Ref: ${codigoReserva} - Cel: ${celularPago} - Estado: ${estadoReserva.toUpperCase()})`;
+    const nombreCompletoConPago = `${nombre} (${metodoPago.toUpperCase()} Ref: ${codigoReserva} - Cel: ${celularPago}${notaClub} - Estado: ${estadoReserva.toUpperCase()})`;
 
     const baseMessageText = `
 ========================================
@@ -338,6 +297,10 @@ Hola ${nombre},
 Tu reserva ha sido registrada de manera exitosa.
 
 DETALLES DE LA CITA:
+Servicio:     ${servicioSel.nombre} (${duracionTexto(servicioSel.duracion)})
+Total:        ${soles(resData.total)}
+Adelanto:     ${soles(resData.adelanto)} (pagado)
+Restante:     ${soles(resData.saldo)} (el día de tu cita)
 ----------------------------------------
 Cliente:      ${nombre}
 Teléfono:     ${celular}
@@ -519,8 +482,7 @@ Estado:       ${estadoReserva.toUpperCase()}
               metodo_pago: metodoPago.toUpperCase(),
               celular_pago: celularPago,
               codigo_reserva: codigoReserva,
-              estado: estadoReserva.toUpperCase(),
-              captura_pago: capturaBase64
+              estado: estadoReserva.toUpperCase()
             }),
           });
           console.log("✅ Fila insertada en Google Sheets");
@@ -529,97 +491,13 @@ Estado:       ${estadoReserva.toUpperCase()}
         }
       }
 
-      // 4. Guardar en base de datos Supabase (Render backend)
-      let databaseSaved = false;
-      try {
-        const response = await fetch(`${API_URL}/reservar-cita`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nombre: nombreCompletoConPago,
-            celular,
-            email,
-            fecha_cita: fecha,
-            hora_cita: hora,
-            codigo: codigoReserva,
-            estado: estadoReserva,
-            voucher_base64: capturaBase64
-          }),
-        });
-        if (response.ok) {
-          const resData = await response.json();
-          console.log("✅ Cita sincronizada con Supabase:", resData);
-          databaseSaved = true;
-        } else {
-          console.error("❌ El backend respondió con un error:", response.status);
-        }
-      } catch (dbErr) {
-        console.error("❌ Error al guardar en base de datos:", dbErr);
-      }
-
-      // Si el backend falló o no pudo guardar, insertamos directamente desde el cliente como respaldo
-      if (!databaseSaved) {
-        console.log("🔄 Iniciando guardado de respaldo directo en Supabase...");
-        try {
-          let voucher_url = null;
-          if (capturaBase64) {
-            try {
-              const filename = `voucher-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}.jpg`;
-              const matches = capturaBase64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
-              if (matches && matches.length === 3) {
-                const contentType = matches[1];
-                const base64Data = matches[2];
-                const binaryStr = atob(base64Data);
-                const bytes = new Uint8Array(binaryStr.length);
-                for (let i = 0; i < binaryStr.length; i++) {
-                  bytes[i] = binaryStr.charCodeAt(i);
-                }
-                
-                const { error: uploadErr } = await supabase.storage
-                  .from('vouchers')
-                  .upload(filename, bytes, { contentType, upsert: true });
-                
-                if (!uploadErr) {
-                  const { data: publicUrlData } = supabase.storage
-                    .from('vouchers')
-                    .getPublicUrl(filename);
-                  voucher_url = publicUrlData.publicUrl;
-                } else {
-                  console.error("❌ Error al subir captura en guardado directo:", uploadErr.message);
-                }
-              }
-            } catch (errUpload) {
-              console.error("❌ Excepción al subir captura en guardado directo:", errUpload);
-            }
-          }
-
-          const { error: insertErr } = await supabase
-            .from("reservas")
-            .insert([{
-              nombre: nombreCompletoConPago,
-              celular,
-              email,
-              fecha_cita: fecha,
-              hora_cita: hora,
-              fecha_registro: new Date().toISOString(),
-              codigo: codigoReserva,
-              estado: estadoReserva.toUpperCase(),
-              voucher_url
-            }]);
-          
-          if (insertErr) throw insertErr;
-          console.log("✅ Cita guardada de respaldo directamente en Supabase con éxito");
-        } catch (fbErr) {
-          console.error("❌ Error fatal en el guardado de respaldo Supabase:", fbErr);
-        }
-      }
-
       setLoading(false);
       setConfirmacionVisible(true);
     } catch (err) {
-      console.error('❌ Error general al reservar:', err);
+      // El pago ya fue aprobado y la cita guardada: solo fallaron las notificaciones
+      console.error('❌ Error enviando notificaciones de la reserva:', err);
       setLoading(false);
-      setError('❌ Ocurrió un error al procesar tu cita. Inténtalo de nuevo.');
+      setConfirmacionVisible(true);
     }
   };
 
@@ -629,99 +507,27 @@ Estado:       ${estadoReserva.toUpperCase()}
     setEmail(user?.email || '');
     setFechaSeleccionada(null);
     setHoraSeleccionada('');
-    setMetodoPago('yape');
     setCelularPago('');
-    removerCaptura();
+    setOtpYape('');
+    setCodigoConfirmado('');
+    setDescuentoAplicado(0);
+    setServicioId('');
+    setPagoConfirmado(null);
     setMostrarFormulario(false);
-    setPaso(1);
+    setPaso(0);
     setConfirmacionVisible(false);
   };
 
-  const generarHoras = () => {
-    const horas = [];
-    const base = new Date();
-    base.setSeconds(0);
-    base.setMilliseconds(0);
-
-    for (let h = 9; h <= 23; h++) {
-      for (let m = 0; m < 60; m += 30) {
-        const hora = new Date(base);
-        hora.setHours(h, m, 0, 0);
-        horas.push(new Date(hora));
-      }
-    }
-
-    const mediaNoche = new Date(base);
-    mediaNoche.setDate(mediaNoche.getDate() + 1);
-    mediaNoche.setHours(0, 0, 0, 0);
-    horas.push(mediaNoche);
-
-    return horas;
-  };
-
-  const horas = generarHoras();
-
-  const obtenerHorasConEstado = () => {
-    if (!fechaSeleccionada) return [];
-
-    const ahora = new Date();
-    const esHoy = fechaSeleccionada.toDateString() === ahora.toDateString();
-
-    return horas.map((h) => {
-      const horaCompleta = new Date(fechaSeleccionada);
-      horaCompleta.setHours(h.getHours(), h.getMinutes(), 0, 0);
-      const esPasada = esHoy && horaCompleta < ahora;
-
-      return {
-        horaStr: horaCompleta.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        }),
-        deshabilitada: esPasada,
-        horaRaw: h.getHours()
-      };
-    });
-  };
-
-  const horasConEstado = obtenerHorasConEstado();
-
-  // Dividir horas por turnos: Mañana (9:00 - 11:30), Tarde (12:00 - 17:30), Noche (18:00 - 23:59)
-  const horasManana = horasConEstado.filter(h => h.horaRaw < 12);
-  const horasTarde = horasConEstado.filter(h => h.horaRaw >= 12 && h.horaRaw < 18);
-  const horasNoche = horasConEstado.filter(h => h.horaRaw >= 18);
-
-  const renderHorasSeccion = (titulo, icono, lista) => {
-    if (lista.length === 0) return null;
-    return (
-      <div className="turno-seccion-modern">
-        <h4 className="turno-titulo-modern">{icono} {titulo}</h4>
-        <div className="horas-grid-modern">
-          {lista.map((horaObj, i) => (
-            <button
-              key={i}
-              className={`hora-btn-modern ${horaSeleccionada === horaObj.horaStr ? 'active' : ''} ${horaObj.deshabilitada ? 'disabled' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                if (!horaObj.deshabilitada) {
-                  setHoraSeleccionada(horaObj.horaStr);
-                }
-              }}
-              disabled={horaObj.deshabilitada}
-            >
-              {horaObj.horaStr}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  const bloqueActivo = turnosPorBloque.find((t) => t.id === turnoActivo) || turnosPorBloque[0];
+  const totalLibres = turnosPorBloque.reduce((acc, t) => acc + t.libres, 0);
+  const progresoClub = fidelidad ? progresoNivel(fidelidad) : 0;
 
   return (
     <div className="cita-fullscreen">
       <div className="cita-overlay-text">
-        <div className="cita-text-top animate-fade-in-up-1">NUEVA PROMO EXCLUSIVA</div>
-        <h1 className="cita-text-main animate-fade-in-up-2">15% DE DESCUENTO EN TU PRIMERA CITA</h1>
+        <div className="cita-text-top animate-fade-in-up-1">RESERVA ONLINE · PAGO CON YAPE</div>
+        <h1 className="cita-text-main animate-fade-in-up-2">TU PRÓXIMO CORTE, A UN CLIC</h1>
+        <p className="cita-text-sub animate-fade-in-up-2">Elige tu hora en segundos y acumula reservas para ganar hasta {nivelesClub[nivelesClub.length - 1].descuento}% de descuento con el Club De Fidelidad JP.</p>
         <div className="cita-button animate-fade-in-up-3" onClick={toggleFormulario}>
           <div className="cita-btn-text">RESERVAR CITA</div>
           <div className="cita-btn-icon"><FaCalendarCheck /></div>
@@ -734,28 +540,19 @@ Estado:       ${estadoReserva.toUpperCase()}
             
             {/* Barra de Progreso Visual */}
             <div className="wizard-progress">
-              <div className={`wizard-step ${paso >= 1 ? 'active' : ''} ${paso === 1 ? 'current' : ''}`}>
-                <div className="step-num">{paso > 1 ? <FaCheck size={10} /> : "1"}</div>
-                <span className="step-label">Datos</span>
-              </div>
-              <div className={`wizard-line ${paso >= 2 ? 'active' : ''}`}></div>
-              <div className={`wizard-step ${paso >= 2 ? 'active' : ''} ${paso === 2 ? 'current' : ''}`}>
-                <div className="step-num">{paso > 2 ? <FaCheck size={10} /> : "2"}</div>
-                <span className="step-label">Fecha</span>
-              </div>
-              <div className={`wizard-line ${paso >= 3 ? 'active' : ''}`}></div>
-              <div className={`wizard-step ${paso >= 3 ? 'active' : ''} ${paso === 3 ? 'current' : ''}`}>
-                <div className="step-num">{paso > 3 ? <FaCheck size={10} /> : "3"}</div>
-                <span className="step-label">Hora</span>
-              </div>
-              <div className={`wizard-line ${paso >= 4 ? 'active' : ''}`}></div>
-              <div className={`wizard-step ${paso >= 4 ? 'active' : ''} ${paso === 4 ? 'current' : ''}`}>
-                <div className="step-num">4</div>
-                <span className="step-label">Pago</span>
-              </div>
+              {['Servicio', 'Datos', 'Fecha', 'Hora', 'Pago'].map((etq, i) => (
+                <React.Fragment key={etq}>
+                  {i > 0 && <div className={`wizard-line ${paso >= i ? 'active' : ''}`}></div>}
+                  <div className={`wizard-step ${paso >= i ? 'active' : ''} ${paso === i ? 'current' : ''}`}>
+                    <div className="step-num">{paso > i ? <FaCheck size={10} /> : i + 1}</div>
+                    <span className="step-label">{etq}</span>
+                  </div>
+                </React.Fragment>
+              ))}
             </div>
 
             <h2 className="wizard-title">
+              {paso === 0 && "Elige tu Servicio"}
               {paso === 1 && "Datos del Cliente"}
               {paso === 2 && "Selecciona Fecha"}
               {paso === 3 && "Selecciona Hora"}
@@ -764,6 +561,43 @@ Estado:       ${estadoReserva.toUpperCase()}
 
             <form ref={formRef} onSubmit={handleSubmit} className="wizard-form">
               
+              {/* PASO 0: Servicio */}
+              {paso === 0 && (
+                <div className="wizard-slide fade-in-slide">
+                  <p className="wizard-desc">¿Qué te hacemos hoy? Reservas con <strong>{soles(montoReserva)}</strong> y el resto lo pagas el día de tu cita.</p>
+
+                  <div className="servicios-lista" role="listbox" aria-label="Servicios">
+                    {servicios.map((sv) => {
+                      const activo = servicioId === sv.id;
+                      return (
+                        <button
+                          key={sv.id}
+                          type="button"
+                          role="option"
+                          aria-selected={activo}
+                          className={`servicio-opcion ${activo ? 'active' : ''}`}
+                          onClick={() => { setError(null); setServicioId(sv.id); setHoraSeleccionada(''); }}
+                        >
+                          <span className="servicio-check">{activo ? <FaCheck /> : <FaCut />}</span>
+                          <span className="servicio-info">
+                            <span className="servicio-nombre">{sv.nombre}</span>
+                            <span className="servicio-duracion"><FaHourglassHalf /> {duracionTexto(sv.duracion)}</span>
+                          </span>
+                          <span className="servicio-precio">{soles(sv.precio)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="wizard-buttons">
+                    <button className="cerrar-btn-wizard" type="button" onClick={toggleFormulario}>Cancelar</button>
+                    <button className={`siguiente-btn ${!servicioSel ? 'disabled' : ''}`} type="button" onClick={nextPaso} disabled={!servicioSel}>
+                      Datos <FaArrowRight size={10} style={{ marginLeft: '8px' }} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* PASO 1: Datos personales */}
               {paso === 1 && (
                 <div className="wizard-slide fade-in-slide">
@@ -811,9 +645,34 @@ Estado:       ${estadoReserva.toUpperCase()}
                       💡 Correo asociado a tu cuenta activa. Tu reserva se guardará aquí.
                     </p>
                   )}
+
+                  {user && fidelidad && (
+                    <div className={`club-mini nivel-${slugNivel(fidelidad.nivel)}`}>
+                      <div className="club-mini-top">
+                        <span className="club-badge"><FaCrown /> Club {fidelidad.nivel}</span>
+                        <span className="club-mini-count">{fidelidad.reservas} {fidelidad.reservas === 1 ? 'reserva' : 'reservas'}</span>
+                      </div>
+                      <p className="club-mini-text">
+                        {fidelidad.descuento > 0
+                          ? <>Tienes <strong>{fidelidad.descuento}% de descuento</strong> en este corte.</>
+                          : <>Te faltan <strong>{fidelidad.siguiente?.faltan}</strong> para nivel {fidelidad.siguiente?.nombre} ({fidelidad.siguiente?.descuento}% dscto.).</>}
+                      </p>
+                      {fidelidad.siguiente && (
+                        <div className="club-progress"><span style={{ width: `${progresoClub}%` }} /></div>
+                      )}
+                    </div>
+                  )}
+
+                  {!user && (
+                    <button type="button" className="club-inline-cta" onClick={() => irARegistro(false)}>
+                      <FaGift /> <span>¿Tienes cuenta? <strong>Inicia sesión</strong> y suma esta reserva al Club JP</span>
+                    </button>
+                  )}
                   
                   <div className="wizard-buttons">
-                    <button className="cerrar-btn-wizard" type="button" onClick={toggleFormulario}>Cancelar</button>
+                    <button className="atras-btn" type="button" onClick={prevPaso}>
+                      <FaArrowLeft size={10} style={{ marginRight: '8px' }} /> Servicio
+                    </button>
                     <button className="siguiente-btn" type="button" onClick={nextPaso}>
                       Fecha <FaArrowRight size={10} style={{ marginLeft: '8px' }} />
                     </button>
@@ -824,7 +683,7 @@ Estado:       ${estadoReserva.toUpperCase()}
               {/* PASO 2: Calendario */}
               {paso === 2 && (
                 <div className="wizard-slide fade-in-slide">
-                  <p className="wizard-desc">¿Qué día prefieres visitarnos? Selecciona en el calendario.</p>
+                  <p className="wizard-desc">¿Qué día prefieres visitarnos? Los días en gris no atendemos.</p>
                   
                   <div className="calendar-container">
                     <div className="calendar-wrapper-modern">
@@ -835,6 +694,8 @@ Estado:       ${estadoReserva.toUpperCase()}
                           setHoraSeleccionada('');
                         }}
                         minDate={new Date()}
+                        maxDate={new Date(Date.now() + DIAS_MAXIMOS_RESERVA * 86400000)}
+                        filterDate={estaAbierto}
                         inline
                         locale="es"
                         className="datepicker-custom"
@@ -868,25 +729,70 @@ Estado:       ${estadoReserva.toUpperCase()}
               {/* PASO 3: Selector de Horas */}
               {paso === 3 && (
                 <div className="wizard-slide fade-in-slide">
-                  <div className="seleccion-alert date-pill">
-                    <FaCalendarAlt style={{ marginRight: '8px', color: '#ffffff' }} /> 
-                    Fecha: <strong>{fechaSeleccionada ? fechaSeleccionada.toLocaleDateString() : ''}</strong>
+                  <div className="hora-fecha-resumen">
+                    <div className="hora-fecha-icono"><FaCalendarAlt /></div>
+                    <div className="hora-fecha-texto">
+                      <span className="hora-fecha-dia">{fechaSeleccionada?.toLocaleDateString('es-PE', { weekday: 'long' })}</span>
+                      <strong>{fechaSeleccionada?.toLocaleDateString('es-PE', { day: 'numeric', month: 'long' })}</strong>
+                    </div>
+                    <button type="button" className="hora-cambiar-fecha" onClick={() => { setError(null); setPaso(2); }}>Cambiar</button>
                   </div>
 
-                  <p className="wizard-desc">Selecciona un horario disponible en los siguientes turnos:</p>
-
-                  <div className="turnos-container-modern">
-                    {renderHorasSeccion("Mañana", "", horasManana)}
-                    {renderHorasSeccion("Tarde", "", horasTarde)}
-                    {renderHorasSeccion("Noche", "", horasNoche)}
+                  <div className="turno-tabs" role="tablist" aria-label="Turno">
+                    {turnosPorBloque.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={bloqueActivo?.id === t.id}
+                        className={`turno-tab ${bloqueActivo?.id === t.id ? 'active' : ''}`}
+                        onClick={() => setTurnoActivo(t.id)}
+                        disabled={t.lista.length === 0}
+                      >
+                        <span className="turno-tab-icono">{t.icono}</span>
+                        <span className="turno-tab-nombre">{t.etiqueta}</span>
+                        <span className="turno-tab-libres">{cargandoHoras ? '·' : t.libres}</span>
+                      </button>
+                    ))}
                   </div>
 
-                  {horaSeleccionada && (
-                    <div className="seleccion-alert time-pill fade-in">
-                      <FaClock style={{ marginRight: '8px', color: '#ffffff' }} />
-                      Hora elegida: <strong>{horaSeleccionada}</strong>
+                  {cargandoHoras ? (
+                    <div className="horas-grid-pro" aria-busy="true">
+                      {Array.from({ length: 8 }).map((_, i) => <span key={i} className="hora-chip-skeleton" />)}
+                    </div>
+                  ) : totalLibres === 0 ? (
+                    <div className="horas-vacio">
+                      <strong>No quedan horarios para este día</strong>
+                      <span>Prueba con otra fecha.</span>
+                    </div>
+                  ) : (
+                    <div className="horas-grid-pro" role="listbox" aria-label="Horarios disponibles">
+                      {bloqueActivo?.lista.map((t) => {
+                        const noDisponible = t.pasado || t.ocupado;
+                        const activo = horaSeleccionada === t.etiqueta;
+                        return (
+                          <button
+                            key={t.valor}
+                            type="button"
+                            role="option"
+                            aria-selected={activo}
+                            className={`hora-chip ${activo ? 'active' : ''} ${t.ocupado ? 'ocupado' : ''}`}
+                            disabled={noDisponible}
+                            onClick={() => { setError(null); setHoraSeleccionada(t.etiqueta); }}
+                          >
+                            <span className="hora-chip-time">{t.etiqueta.slice(0, 5)}</span>
+                            <span className="hora-chip-ampm">{t.ocupado ? 'Ocupado' : t.etiqueta.slice(6)}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
+
+                  <div className="horas-leyenda">
+                    <span><i className="leyenda-dot libre" /> Disponible</span>
+                    <span><i className="leyenda-dot elegido" /> Elegido</span>
+                    <span><i className="leyenda-dot ocupado" /> Ocupado</span>
+                  </div>
 
                   <div className="wizard-buttons">
                     <button className="atras-btn" type="button" onClick={prevPaso}>
@@ -899,12 +805,6 @@ Estado:       ${estadoReserva.toUpperCase()}
                         e.preventDefault();
                         if (horaSeleccionada) {
                           setError(null);
-                          // Generar código único temporal RES-XXXXXX (garantiza no repeticiones)
-                          const prefijos = ['RES', 'BARB', 'CUT'];
-                          const prefijo = prefijos[Math.floor(Math.random() * prefijos.length)];
-                          const randomNum = Math.floor(100000 + Math.random() * 900000);
-                          setCodigoReserva(`${prefijo}-${randomNum}`);
-                          setEstadoReserva('pending');
                           setPaso(4);
                         } else {
                           setError("⚠️ Por favor selecciona una hora para tu cita.");
@@ -918,7 +818,7 @@ Estado:       ${estadoReserva.toUpperCase()}
                 </div>
               )}
 
-              {/* PASO 4: Pago Yape / Plin con Validación OCR */}
+              {/* PASO 4: Pago con Yape (código de aprobación vía Mercado Pago) */}
               {paso === 4 && (
                 <div className="wizard-slide fade-in-slide">
                   <div className="seleccion-alert date-pill">
@@ -926,259 +826,96 @@ Estado:       ${estadoReserva.toUpperCase()}
                     Cita: <strong>{fechaSeleccionada ? fechaSeleccionada.toLocaleDateString() : ''} - {horaSeleccionada}</strong>
                   </div>
 
-                  <p className="wizard-desc font-premium-alert">
-                    Para confirmar tu reserva realiza un adelanto de <strong>S/ 1.00</strong>
-                    
-                  </p>
-
-                  {/* Ficha Resumen de Pago */}
-                  <div className="ficha-pago-premium">
-                    <div className="ficha-item">
-                      <span>Código de reserva:</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input
-                          type="text"
-                          value={codigoReserva}
-                          onChange={(e) => setCodigoReserva(e.target.value.toUpperCase())}
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.07)',
-                            border: '1px dashed #ffd700',
-                            color: '#ffd700',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            width: '120px',
-                            fontFamily: 'monospace',
-                            fontSize: '0.85rem',
-                            fontWeight: 'bold',
-                            textAlign: 'center',
-                            outline: 'none'
-                          }}
-                          title="Puedes modificar este código para pruebas"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => copiarAlPortapapeles(codigoReserva)}
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            color: '#ccc',
-                            fontSize: '0.68rem',
-                            padding: '3px 8px',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {copiado ? "¡Copiado!" : "Copiar"}
-                        </button>
+                  {servicioSel && montos && (
+                    <div className="desglose-pago">
+                      <div className="desglose-fila">
+                        <span>{servicioSel.nombre} <em>· {duracionTexto(servicioSel.duracion)}</em></span>
+                        <span>{soles(servicioSel.precio)}</span>
                       </div>
-                    </div>
-                    <div className="ficha-item">
-                      <span>Yapear/Plinear a:</span>
-                      <strong>975 404 704</strong>
-                    </div>
-                    <div className="ficha-item">
-                      <span>Monto del adelanto:</span>
-                      <strong className="monto-highlight">S/ 1.00</strong>
-                    </div>
-                  </div>
-
-                  {/* Instrucciones de copia e Yapeo */}
-                  <p style={{
-                    fontSize: '0.82rem',
-                    color: '#a0a0a0',
-                    lineHeight: '1.4',
-                    marginTop: '-15px',
-                    marginBottom: '20px',
-                    textAlign: 'center',
-                    background: 'rgba(255, 215, 0, 0.05)',
-                    border: '1px solid rgba(255, 215, 0, 0.12)',
-                    padding: '10px 14px',
-                    borderRadius: '12px'
-                  }}>
-                    💡 <strong>Instrucciones:</strong> Copia el código de arriba y pégalo en la <strong>Descripción</strong> (o nota) de tu Yape/Plin al realizar el pago para validar tu reserva automáticamente.
-                  </p>
-
-                  {/* Selector de Método de Pago */}
-                  <div className="metodo-pago-selector">
-                    <button
-                      type="button"
-                      className={`metodo-btn yape-btn ${metodoPago === 'yape' ? 'active' : ''}`}
-                      onClick={() => { setMetodoPago('yape'); setError(null); }}
-                    >
-                      <span className="metodo-dot"></span> Yape
-                    </button>
-                    <button
-                      type="button"
-                      className={`metodo-btn plin-btn ${metodoPago === 'plin' ? 'active' : ''}`}
-                      onClick={() => { setMetodoPago('plin'); setError(null); }}
-                    >
-                      <span className="metodo-dot"></span> Plin
-                    </button>
-                  </div>
-
-                  {/* QR / Instrucciones */}
-                  <div className="pago-instrucciones-wrapper">
-                    {metodoPago === 'yape' ? (
-                      <div className="yape-instrucciones fade-in-slide-quick">
-                        <div className="yape-qr-container">
-                          <img src={yapeQr} alt="Yape QR" className="yape-qr-img" />
+                      {montos.total < servicioSel.precio && (
+                        <div className="desglose-fila descuento">
+                          <span>Descuento Club {fidelidad?.nivel} (-{fidelidad?.descuento}%)</span>
+                          <span>- {soles(servicioSel.precio - montos.total)}</span>
                         </div>
-                        <p className="pago-destinatario">
-                          Escanea el QR o yapea a: <strong>975 404 704</strong><br />
-                          Titular: <strong>Junior Jesus Alejandro Tovar Salazar</strong>
-                        </p>
+                      )}
+                      <div className="desglose-fila total">
+                        <span>Total del servicio</span>
+                        <span>{soles(montos.total)}</span>
                       </div>
-                    ) : (
-                      <div className="plin-instrucciones fade-in-slide-quick">
-                        <div className="plin-icon-container">
-                          <div className="plin-circle">P</div>
+                      <div className="desglose-split">
+                        <div className="desglose-hoy">
+                          <span>Pagas hoy</span>
+                          <strong>{soles(montos.adelanto)}</strong>
                         </div>
-                        <p className="pago-destinatario">
-                          Plinea directamente al número: <strong>975 404 704</strong><br />
-                          Titular: <strong>Junior Jesus Alejandro Tovar Salazar</strong>
-                        </p>
+                        <div className="desglose-despues">
+                          <span>{montos.saldo > 0 ? 'Restante en tu cita' : 'Restante'}</span>
+                          <strong>{soles(montos.saldo)}</strong>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
-                  {/* Inputs y drag-and-drop */}
-                  <div className="pago-inputs-container">
+                  {user && fidelidad?.descuento > 0 && (
+                    <div className={`club-mini compacto nivel-${slugNivel(fidelidad.nivel)}`}>
+                      <span className="club-badge"><FaCrown /> Club {fidelidad.nivel}</span>
+                      <p className="club-mini-text"><strong>{fidelidad.descuento}% de descuento</strong> ya aplicado al total.</p>
+                    </div>
+                  )}
+
+                  <div className="yape-pago-card">
+                    <div className="yape-pago-header">
+                      <span className="yape-logo">yape</span>
+                      <span className="yape-pago-monto">{soles(montos?.adelanto)}</span>
+                    </div>
+
+                    <ol className="yape-pasos">
+                      <li>Abre tu app de <strong>Yape</strong>.</li>
+                      <li>En el menú, entra a <strong>Código de aprobación</strong>.</li>
+                      <li>Escribe aquí tu celular y el código de 6 dígitos.</li>
+                    </ol>
+
                     <div className="input-group-modern">
                       <span className="input-icon-modern"><FaPhone /></span>
-                      <input 
-                        type="tel" 
-                        placeholder="Celular desde el que pagaste (9 dígitos)" 
-                        value={celularPago} 
-                        onChange={(e) => setCelularPago(e.target.value.replace(/\D/g, '').slice(0, 9))} 
-                        required 
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
+                        placeholder="Celular de tu Yape (9 dígitos)"
+                        value={celularPago}
+                        onChange={(e) => setCelularPago(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                        required
                       />
                       <span className="input-focus-border"></span>
                     </div>
 
-                    {/* Drag and Drop Uploader */}
-                    <div 
-                      className={`dropzone-modern ${dragging ? 'dragging' : ''} ${capturaPreview ? 'has-preview' : ''}`}
-                      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-                      onDragLeave={() => setDragging(false)}
-                      onDrop={async (e) => {
-                        e.preventDefault();
-                        setDragging(false);
-                        const file = e.dataTransfer.files[0];
-                        if (file && file.type.startsWith('image/')) {
-                          await procesarArchivoVoucher(file);
-                        } else {
-                          setError("⚠️ Por favor suelta una imagen válida.");
-                        }
-                      }}
-                    >
-                      {!capturaPreview ? (
-                        <label className="upload-label-wrapper">
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleFileChange} 
-                            style={{ display: 'none' }} 
-                            required 
-                          />
-                          <div className="upload-icon-box">📸</div>
-                          <span className="upload-text-main">Arrastra y suelta tu voucher aquí</span>
-                          <span className="upload-text-sub">o haz clic para buscar la imagen</span>
-                        </label>
-                      ) : (
-                        <div className="preview-captura-container fade-in-slide-quick">
-                          <div className="preview-img-wrapper">
-                            <img src={capturaPreview} alt="Comprobante de pago" className="preview-captura-img" />
-                          </div>
-                          <button 
-                            type="button" 
-                            className="remover-captura-btn" 
-                            onClick={removerCaptura}
-                          >
-                            Eliminar captura
-                          </button>
-                        </div>
-                      )}
+                    <div className="input-group-modern">
+                      <span className="input-icon-modern"><FaLock /></span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        placeholder="Código de aprobación"
+                        className="yape-otp-input"
+                        value={otpYape}
+                        onChange={(e) => setOtpYape(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        required
+                      />
+                      <span className="input-focus-border"></span>
                     </div>
+
+                    <p className="yape-pago-nota">
+                      El código dura 2 minutos. El cobro se hace al instante y tu cita queda confirmada automáticamente.
+                    </p>
                   </div>
-
-                  {/* Estado del Lector OCR */}
-                  {ocrStatus && (
-                    <div className="ocr-status-indicator">
-                      <div className="ocr-spinner"></div>
-                      <span>{ocrStatus}</span>
-                    </div>
-                  )}
-
-                  {/* Resultados de la validación OCR */}
-                  {ocrResultado && (
-                    <div className={`ocr-resultado-box ${ocrResultado.success ? 'success' : 'warning'}`}>
-                      {ocrResultado.success ? (
-                        <>
-                          <span className="resultado-icon">✅</span>
-                          <div className="resultado-text-box">
-                            <strong>Reserva validada exitosamente</strong>
-                            <p>{ocrResultado.message}</p>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <span className="resultado-icon">⚠️</span>
-                          <div className="resultado-text-box">
-                            <strong>No pudimos validar el pago automáticamente</strong>
-                            <p>{ocrResultado.message}</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Detalles leídos por el OCR */}
-                  {ocrMetadatos && (
-                    <div className="ocr-detalles-box fade-in-slide-quick">
-                      <h4 className="ocr-detalles-titulo">🔍 Datos leídos de la captura:</h4>
-                      <div className="ocr-detalles-grid">
-                        <div className="ocr-detalle-item">
-                          <span>Comprobante:</span>
-                          <strong className={ocrMetadatos.tipoPago !== 'No detectado' ? 'detectado-ok' : ''}>
-                            {ocrMetadatos.tipoPago} {ocrMetadatos.tipoPago !== 'No detectado' && '✅'}
-                          </strong>
-                        </div>
-                        <div className="ocr-detalle-item">
-                          <span>Monto del Adelanto:</span>
-                          <strong className={ocrMetadatos.monto !== 'No detectado' ? 'detectado-ok' : ''}>
-                            {ocrMetadatos.monto} {ocrMetadatos.monto !== 'No detectado' && '✅'}
-                          </strong>
-                        </div>
-                        <div className="ocr-detalle-item">
-                          <span>Código de reserva:</span>
-                          <strong className={ocrMetadatos.codigo !== 'No detectado' ? 'detectado-ok' : ''}>
-                            {ocrMetadatos.codigo} {ocrMetadatos.codigo !== 'No detectado' && '✅'}
-                          </strong>
-                        </div>
-                        <div className="ocr-detalle-item">
-                          <span>Fecha de pago:</span>
-                          <strong className={ocrMetadatos.fecha !== 'No detectada' ? 'detectado-ok' : ''}>
-                            {ocrMetadatos.fecha} {ocrMetadatos.fecha !== 'No detectada' && '✅'}
-                          </strong>
-                        </div>
-                        <div className="ocr-detalle-item">
-                          <span>Hora de pago:</span>
-                          <strong className={ocrMetadatos.hora !== 'No detectada' ? 'detectado-ok' : ''}>
-                            {ocrMetadatos.hora} {ocrMetadatos.hora !== 'No detectada' && '✅'}
-                          </strong>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   <div className="wizard-buttons">
                     <button className="atras-btn" type="button" onClick={() => { setError(null); setPaso(3); }}>
                       <FaArrowLeft size={10} style={{ marginRight: '8px' }} /> Hora
                     </button>
-                    <button 
-                      className={`confirmar-btn-wizard ${!celularPago || !capturaBase64 || loading ? 'disabled' : ''}`} 
+                    <button
+                      className={`confirmar-btn-wizard ${celularPago.length !== 9 || otpYape.length !== 6 || loading ? 'disabled' : ''}`}
                       type="submit"
-                      disabled={!celularPago || !capturaBase64 || loading}
+                      disabled={celularPago.length !== 9 || otpYape.length !== 6 || loading}
                     >
                       {loading ? (
                         <div className="loading-spinner-btn">
@@ -1187,7 +924,7 @@ Estado:       ${estadoReserva.toUpperCase()}
                           <span className="spinner-dot"></span>
                         </div>
                       ) : (
-                        "Confirmar Cita"
+                        `Pagar ${soles(montos?.adelanto)} con Yape`
                       )}
                     </button>
                   </div>
@@ -1195,6 +932,29 @@ Estado:       ${estadoReserva.toUpperCase()}
               )}
             </form>
             {error && <p className="cita-error-modern">{error}</p>}
+          </div>
+        </div>
+      )}
+
+      {mostrarClubPopup && (
+        <div className="club-popup-overlay" role="dialog" aria-modal="true" aria-labelledby="club-popup-titulo" onClick={cerrarClubPopup}>
+          <div className="club-popup fade-in-scale" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="club-popup-cerrar" onClick={cerrarClubPopup} aria-label="Cerrar"><FaTimes /></button>
+            <div className="club-popup-icono"><FaCrown /></div>
+            <span className="club-popup-kicker">Club De Fidelidad JP</span>
+            <h3 id="club-popup-titulo">Cada corte suma. Tu próximo puede salir con descuento.</h3>
+            <p>Crea tu cuenta gratis y acumula reservas para subir de nivel:</p>
+            <ul className="club-popup-niveles">
+              {nivelesClub.filter((n) => n.descuento > 0).map((n) => (
+                <li key={n.nombre} className={`nivel-${slugNivel(n.nombre)}`}>
+                  <span className="club-popup-nivel">{n.nombre}</span>
+                  <span className="club-popup-req">{n.minimo} reservas</span>
+                  <strong>-{n.descuento}%</strong>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="club-popup-primario" onClick={() => irARegistro(true)}>Crear cuenta gratis</button>
+            <button type="button" className="club-popup-secundario" onClick={cerrarClubPopup}>Reservar como invitado</button>
           </div>
         </div>
       )}
@@ -1218,16 +978,45 @@ Estado:       ${estadoReserva.toUpperCase()}
             </p>
             
             <div className="confirmacion-resumen-box">
-              <div className="resumen-item"><span>📍 Ubicación:</span> <span>Av. Principal 123 - Lima, Perú</span></div>
+              <div className="resumen-item"><span>📍 Sede:</span> <a href={SEDE.mapa} target="_blank" rel="noopener noreferrer">{SEDE.nombre} · {SEDE.direccion}</a></div>
+              {servicioSel && <div className="resumen-item"><span>💈 Servicio:</span> <span>{servicioSel.nombre}</span></div>}
               <div className="resumen-item"><span>👤 Cliente:</span> <span>{nombre}</span></div>
               <div className="resumen-item"><span>📱 Celular:</span> <span>{celular}</span></div>
               <div className="resumen-item"><span>📅 Fecha:</span> <span>{fechaSeleccionada ? fechaSeleccionada.toLocaleDateString() : ''}</span></div>
               <div className="resumen-item"><span>⏰ Hora:</span> <span>{horaSeleccionada}</span></div>
+              {pagoConfirmado && <div className="resumen-item"><span>💜 Adelanto pagado:</span> <span>{soles(pagoConfirmado.adelanto)}</span></div>}
+              {pagoConfirmado?.saldo > 0 && <div className="resumen-item resumen-restante"><span>⏳ Restante (en tu cita):</span> <span>{soles(pagoConfirmado.saldo)}</span></div>}
+              {codigoConfirmado && <div className="resumen-item"><span>🎟️ Código:</span> <span>{codigoConfirmado}</span></div>}
             </div>
+
+            {fidelidad && user ? (
+              <div className={`club-mini confirmacion nivel-${slugNivel(fidelidad.nivel)}`}>
+                <div className="club-mini-top">
+                  <span className="club-badge"><FaCrown /> Club {fidelidad.nivel}</span>
+                  <span className="club-mini-count">+1 · {fidelidad.reservas} {fidelidad.reservas === 1 ? 'reserva' : 'reservas'}</span>
+                </div>
+                <p className="club-mini-text">
+                  {descuentoAplicado > 0 && <>Esta cita tiene <strong>{descuentoAplicado}% de descuento</strong>. </>}
+                  {fidelidad.siguiente
+                    ? <>Te faltan <strong>{fidelidad.siguiente.faltan}</strong> para nivel {fidelidad.siguiente.nombre} ({fidelidad.siguiente.descuento}%).</>
+                    : <>Estás en el nivel más alto del Club. ¡Gracias por tu fidelidad!</>}
+                </p>
+                {fidelidad.siguiente && <div className="club-progress"><span style={{ width: `${progresoNivel(fidelidad)}%` }} /></div>}
+              </div>
+            ) : !user && (
+              <div className="club-confirmacion-cta">
+                <FaGift className="club-cta-icon" />
+                <div>
+                  <strong>¿Quieres que esta reserva cuente para tus descuentos?</strong>
+                  <p>Crea tu cuenta con <b>{email}</b> y tus reservas se sumarán al Club De Fidelidad JP automáticamente.</p>
+                </div>
+                <button type="button" className="club-cta-btn" onClick={() => { cerrarConfirmacion(); irARegistro(true); }}>Crear cuenta</button>
+              </div>
+            )}
 
             <div className="confirmacion-acciones">
               <a 
-                href={`https://wa.me/51975404704?text=${encodeURIComponent(`¡Hola! Acabo de reservar una cita:\n👤 Cliente: ${nombre}\n📅 Fecha: ${fechaSeleccionada ? fechaSeleccionada.toLocaleDateString() : ''}\n⏰ Hora: ${horaSeleccionada}\n📱 Celular: ${celular}`)}`}
+                href={`https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(`¡Hola! Acabo de reservar una cita:\n👤 Cliente: ${nombre}\n💈 Servicio: ${servicioSel?.nombre || ''}\n📅 Fecha: ${fechaSeleccionada ? fechaSeleccionada.toLocaleDateString() : ''}\n⏰ Hora: ${horaSeleccionada}\n📱 Celular: ${celular}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="whatsapp-confirm-btn"

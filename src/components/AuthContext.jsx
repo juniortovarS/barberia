@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { ADMIN_EMAILS } from '../config';
 
 const AuthContext = createContext();
 
@@ -8,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [recuperandoClave, setRecuperandoClave] = useState(false);
 
   useEffect(() => {
     // Obtener sesión actual al cargar
@@ -20,7 +22,11 @@ export const AuthProvider = ({ children }) => {
     });
 
     // Escuchar cambios en el estado de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // El usuario llegó desde el enlace de "recuperar contraseña" del correo
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecuperandoClave(true);
+      }
       setSession(session);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -38,36 +44,23 @@ export const AuthProvider = ({ children }) => {
       setIsAdmin(false);
       return;
     }
-    // Determinar si es admin por rol en metadatos, correo exacto o formato de correo
-    const userRole = u.user_metadata?.role;
-    const email = u.email || '';
-    const isUserAdmin = 
-      userRole === 'admin' || 
-      email === 'juniortovaradmin@gmail.com' ||
-      email === 'juniortovar601@gmail.com' ||
-      email.startsWith('admin') || 
-      email.endsWith('@barberia.com');
-    
+    // Solo controla qué se muestra en pantalla: la protección real está en el backend y en las políticas RLS de Supabase.
+    // app_metadata solo se puede modificar desde el servidor (user_metadata lo puede editar cualquier usuario).
+    const email = (u.email || '').toLowerCase();
+    const isUserAdmin = u.app_metadata?.role === 'admin' || ADMIN_EMAILS.includes(email);
+
     setIsAdmin(isUserAdmin);
   };
 
   // Función para registrarse
   const signup = async (email, password, nombre) => {
     try {
-      const role = 
-        email === 'juniortovaradmin@gmail.com' || 
-        email === 'juniortovar601@gmail.com' || 
-        email.startsWith('admin') || 
-        email.endsWith('@barberia.com') 
-          ? 'admin' 
-          : 'customer';
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            nombre: nombre,
-            role: role
+            nombre: nombre
           }
         }
       });
@@ -110,7 +103,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, login, signup, logout, recuperandoClave, setRecuperandoClave }}>
       {children}
     </AuthContext.Provider>
   );

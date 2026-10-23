@@ -150,6 +150,7 @@ const Section2 = () => {
                 src={src}
                 muted
                 playsInline
+                preload="metadata"
                 onEnded={() => handleEnded(i)}
                 controls={false}
               />

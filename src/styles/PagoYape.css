@@ -1,0 +1,120 @@
+.pyape {
+  --yape: #742582;
+  text-align: left;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(157, 60, 176, 0.4);
+  background: linear-gradient(160deg, rgba(116, 37, 130, 0.22), rgba(116, 37, 130, 0.05));
+  font-family: var(--font-body);
+}
+
+.pyape span, .pyape p, .pyape li { color: inherit; }
+
+.pyape-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.pyape-logo {
+  background: var(--yape);
+  color: #ffffff !important;
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 3px 13px;
+  border-radius: 999px;
+}
+
+.pyape-monto {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.pyape-pasos {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #cfcfcf;
+}
+
+.pyape-pasos strong { color: #d68bf2; }
+
+.pyape-campo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  margin-bottom: 8px;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: #8a8a8a;
+  transition: border-color 0.15s ease;
+}
+
+.pyape-campo:focus-within { border-color: #d68bf2; }
+
+.pyape-campo input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 16px;
+}
+
+.pyape-otp { letter-spacing: 6px; font-family: monospace !important; }
+.pyape-otp::placeholder { letter-spacing: normal; font-family: var(--font-body); }
+
+.pyape-error {
+  margin: 4px 0 8px;
+  font-size: 0.8rem;
+  color: #ff8a8a !important;
+}
+
+.pyape-boton {
+  width: 100%;
+  height: 50px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 12px;
+  background: var(--yape);
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.pyape-boton:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); }
+.pyape-boton:disabled { opacity: 0.45; cursor: not-allowed; }
+.pyape-boton:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+
+.pyape-spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  animation: pyapeGiro 0.8s linear infinite;
+}
+
+@keyframes pyapeGiro { to { transform: rotate(360deg); } }
+
+.pyape-nota {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  color: #9a9a9a;
+  text-align: center;
+}

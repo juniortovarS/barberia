@@ -1,0 +1,131 @@
+/* =========================================================
+   MODAL DE INICIO DE SESIÓN / REGISTRO (centrado)
+   ========================================================= */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.75);
+  animation: authOverlayIn 0.2s ease-out;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+}
+
+@keyframes authOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Mayor especificidad que las reglas antiguas del popup (posición absoluta junto al icono) */
+.auth-modal-overlay .auth-popup-navbar {
+  position: relative;
+  top: auto;
+  right: auto;
+  left: auto;
+  width: 100%;
+  max-width: 420px;
+  max-height: none;
+  margin: auto;
+  padding: 34px 30px 30px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(110% 55% at 50% 0%, rgba(227, 185, 91, 0.1), transparent 65%),
+    linear-gradient(180deg, #161617, #0e0e0f);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+  animation: authModalIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes authModalIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.auth-modal-overlay .cerrar-auth-btn {
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.auth-modal-overlay .cerrar-auth-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.auth-modal-brand {
+  text-align: center;
+  margin: 0 0 20px;
+}
+
+.auth-modal-kicker {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #e3b95b;
+  margin-bottom: 6px;
+}
+
+.auth-modal-lead {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #bdbdbd;
+}
+
+.auth-modal-overlay .auth-tabs {
+  margin-bottom: 20px;
+}
+
+.auth-modal-overlay .auth-form-group input {
+  font-size: 16px; /* evita el zoom automático de iOS al enfocar */
+}
+
+/* Acceso a perfil / login en el menú móvil */
+.mobile-menu-link-cuenta {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  color: #e3b95b !important;
+}
+
+@media (max-width: 480px) {
+  .auth-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  /* En celular aparece como hoja desde abajo, más cómoda para el pulgar */
+  .auth-modal-overlay .auth-popup-navbar {
+    max-width: none;
+    margin: 0;
+    border-radius: 22px 22px 0 0;
+    padding: 30px 20px calc(24px + env(safe-area-inset-bottom));
+    animation: authSheetIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes authSheetIn {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+}
+
+/* El icono de búsqueda no tiene función: se oculta en celular para dar espacio al interruptor de tema */
+@media (max-width: 600px) {
+  .icon-busqueda { display: none !important; }
+}

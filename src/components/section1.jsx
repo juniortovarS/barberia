@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/section1.css";
-import studio1 from "../assets/studio1.png";
-import studio2 from "../assets/studio2.png";
-import studio3 from "../assets/studio3.png";
+import studio1 from "../assets/studio1.webp";
+import studio2 from "../assets/studio2.webp";
+import studio3 from "../assets/studio3.webp";
 
 const images = [studio1, studio2, studio3];
 

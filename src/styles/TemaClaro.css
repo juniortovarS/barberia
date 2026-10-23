@@ -1,0 +1,332 @@
+/* =========================================================
+   🌞 MODO DÍA
+   Se activa con <html data-tema="claro">. Las zonas con foto o video de fondo
+   (portadas) se mantienen oscuras para que el texto blanco siga leyéndose bien.
+   ========================================================= */
+
+/* Transición suave solo mientras se cambia de tema */
+html.tema-transicion,
+html.tema-transicion *,
+html.tema-transicion *::before,
+html.tema-transicion *::after {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease !important;
+}
+
+/* html[...] tiene más prioridad que el :root de index.css (que se carga después) */
+html[data-tema="claro"] {
+  --bg-primary: #f6f3ee;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #efeae2;
+  --text-primary: #141414;
+  --text-secondary: #4d4a46;
+  --text-muted: #8c877f;
+  --border-color: rgba(20, 20, 20, 0.1);
+  --border-color-hover: rgba(20, 20, 20, 0.28);
+  --oro: #a8761f;
+  color-scheme: light;
+}
+
+[data-tema="claro"] body { background-color: var(--bg-primary); }
+[data-tema="claro"] ::selection { background: #141414; color: #ffffff; }
+
+/* Portadas con foto/video: conservan la paleta oscura */
+[data-tema="claro"] .section1-fullscreen,
+[data-tema="claro"] .cita-overlay-text,
+[data-tema="claro"] .servicios-fullscreen,
+[data-tema="claro"] .tienda-header-fullscreen,
+[data-tema="claro"] .blog-hero,
+[data-tema="claro"] .servicio-item,
+[data-tema="claro"] .grid-img-container {
+  --text-primary: #ffffff;
+  --text-secondary: #d9d9d9;
+  --text-muted: #a0a0a0;
+  --border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Mientras cargan la foto o el video, las portadas no muestran un flash claro */
+[data-tema="claro"] .section1-fullscreen,
+[data-tema="claro"] .servicios-fullscreen,
+[data-tema="claro"] .tienda-header-fullscreen,
+[data-tema="claro"] .blog-hero { background-color: #0a0a0a; }
+
+/* ---------- Navbar ---------- */
+[data-tema="claro"] .navbar,
+[data-tema="claro"] .navbar.scrolled,
+[data-tema="claro"] .navbar-transparent {
+  background-color: rgba(250, 248, 244, 0.92) !important;
+  border-bottom: 1px solid rgba(20, 20, 20, 0.08);
+  box-shadow: 0 6px 24px rgba(60, 45, 20, 0.06);
+}
+
+[data-tema="claro"] .navbar-logo { filter: invert(1); }
+[data-tema="claro"] .navbar-link,
+[data-tema="claro"] .navbar-right .icon,
+[data-tema="claro"] .hamburger-btn { color: #141414 !important; }
+[data-tema="claro"] .navbar-link-admin { background: rgba(20, 20, 20, 0.05); border-color: rgba(20, 20, 20, 0.15); }
+[data-tema="claro"] .user-avatar-badge { background: #141414; color: #ffffff; }
+
+[data-tema="claro"] .tema-toggle:not(.claro) { border-color: rgba(20, 20, 20, 0.2); }
+
+[data-tema="claro"] .mobile-menu,
+[data-tema="claro"] .mobile-menu.open { background-color: rgba(248, 245, 240, 0.99); }
+[data-tema="claro"] .mobile-menu-link { color: #141414; }
+[data-tema="claro"] .mobile-menu-link-cuenta { color: var(--oro) !important; }
+
+[data-tema="claro"] .carrito-popup-navbar {
+  background-color: #ffffff;
+  box-shadow: 0 20px 50px rgba(60, 45, 20, 0.18);
+}
+
+/* ---------- Modal de login / registro ---------- */
+[data-tema="claro"] .auth-modal-overlay { background: rgba(30, 25, 18, 0.45); }
+
+[data-tema="claro"] .auth-modal-overlay .auth-popup-navbar {
+  background: radial-gradient(110% 55% at 50% 0%, rgba(168, 118, 31, 0.1), transparent 65%), #ffffff;
+  border-color: rgba(20, 20, 20, 0.08);
+  box-shadow: 0 30px 80px rgba(60, 45, 20, 0.25);
+}
+
+[data-tema="claro"] .auth-modal-kicker { color: var(--oro); }
+[data-tema="claro"] .auth-modal-lead { color: #5c5852; }
+[data-tema="claro"] .auth-modal-overlay .cerrar-auth-btn { background: rgba(20, 20, 20, 0.06); color: #141414; }
+[data-tema="claro"] .auth-form-group input,
+[data-tema="claro"] .auth-form-select { background-color: #f6f3ee; color: #141414; }
+[data-tema="claro"] .auth-submit-btn { background-color: #141414; color: #ffffff; }
+[data-tema="claro"] .auth-tab-btn.active { color: #141414; }
+
+/* ---------- Portada ---------- */
+[data-tema="claro"] .section2-container,
+[data-tema="claro"] .section3-container { background-color: var(--bg-primary); }
+[data-tema="claro"] .mobile-dot,
+[data-tema="claro"] .s3-mobile-dot { background-color: rgba(20, 20, 20, 0.2); }
+[data-tema="claro"] .section2-container .video-wrapper,
+[data-tema="claro"] .section3-container .video-wrapper { box-shadow: 0 20px 48px rgba(60, 45, 20, 0.2); }
+
+[data-tema="claro"] .reseñas-container { background-color: var(--bg-primary); }
+[data-tema="claro"] .reseñas-wrapper { background-color: transparent; }
+[data-tema="claro"] .reseña-card {
+  background-color: #ffffff;
+  border-color: rgba(20, 20, 20, 0.08);
+  box-shadow: 0 18px 40px rgba(60, 45, 20, 0.12);
+}
+[data-tema="claro"] .reseña-dots span { background-color: rgba(20, 20, 20, 0.2); }
+
+[data-tema="claro"] .sticky-banner {
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 20px rgba(60, 45, 20, 0.12);
+}
+
+[data-tema="claro"] .footer-container { background-color: #ece6dc; }
+[data-tema="claro"] .footer-container a { color: #141414; }
+
+/* ---------- Club de fidelidad (portada) ---------- */
+[data-tema="claro"] .club-section {
+  background: radial-gradient(60% 50% at 50% 0%, rgba(168, 118, 31, 0.1), transparent 70%), #f1ece4;
+  border-color: rgba(20, 20, 20, 0.06);
+}
+[data-tema="claro"] .club-kicker { color: var(--oro); }
+[data-tema="claro"] .club-nivel {
+  background: #ffffff;
+  border-color: rgba(20, 20, 20, 0.08);
+  box-shadow: 0 10px 30px rgba(60, 45, 20, 0.07);
+}
+[data-tema="claro"] .club-nivel.nivel-plata { --nivel: #8f98a3; }
+[data-tema="claro"] .club-nivel.nivel-oro { --nivel: #b8862f; }
+[data-tema="claro"] .club-nivel.nivel-black { --nivel: #ffffff; background: linear-gradient(180deg, #1c1c1d, #0c0c0d); }
+[data-tema="claro"] .club-nivel-descuento { color: #141414; }
+[data-tema="claro"] .club-nivel.nivel-black .club-nivel-descuento { color: #ffffff; }
+[data-tema="claro"] .club-nivel.nivel-clasico { --nivel: #8c877f; }
+[data-tema="claro"] .club-paso { background: #ffffff; border-color: rgba(20, 20, 20, 0.07); }
+[data-tema="claro"] .club-paso-icono { background: #141414; color: #ffffff; }
+[data-tema="claro"] .club-paso-num { color: rgba(20, 20, 20, 0.08); }
+[data-tema="claro"] .club-btn-primario { background: #141414; border-color: #141414; color: #ffffff; }
+[data-tema="claro"] .club-btn-secundario { border-color: rgba(20, 20, 20, 0.3); color: #141414; }
+[data-tema="claro"] .club-btn-secundario:hover { background: #141414; color: #ffffff; }
+[data-tema="claro"] .club-progreso-top strong { color: var(--oro); }
+
+/* ---------- Reserva (wizard) ---------- */
+[data-tema="claro"] .cita-formulario-overlay { background: rgba(240, 236, 229, 0.97); }
+[data-tema="claro"] .wizard-box,
+[data-tema="claro"] .confirmacion-box {
+  background: #ffffff !important;
+  border: 1px solid rgba(20, 20, 20, 0.08) !important;
+  box-shadow: 0 30px 80px rgba(60, 45, 20, 0.16);
+  color: #141414;
+}
+[data-tema="claro"] .wizard-title { color: #141414; }
+[data-tema="claro"] .step-num { background: #f2eee8; border-color: rgba(20, 20, 20, 0.1); }
+[data-tema="claro"] .wizard-step.active .step-num { background: #141414; border-color: #141414; color: #ffffff; }
+[data-tema="claro"] .wizard-step.active .step-label { color: #141414; }
+[data-tema="claro"] .wizard-step.current .step-num { background: #ffffff; border-color: #141414; color: #141414; }
+[data-tema="claro"] .wizard-line { background: rgba(20, 20, 20, 0.1); }
+[data-tema="claro"] .wizard-line.active { background: #141414; }
+
+[data-tema="claro"] .input-group-modern { background: #f7f4ef; border-color: rgba(20, 20, 20, 0.1); }
+[data-tema="claro"] .input-group-modern:focus-within { background: #ffffff; border-color: rgba(20, 20, 20, 0.45); }
+[data-tema="claro"] .input-icon-modern { border-right-color: rgba(20, 20, 20, 0.08); }
+[data-tema="claro"] .input-group-modern:focus-within .input-icon-modern { color: #141414; }
+[data-tema="claro"] .input-group-modern input { color: #141414 !important; }
+[data-tema="claro"] .input-focus-border { background: #141414; }
+
+[data-tema="claro"] .siguiente-btn,
+[data-tema="claro"] .confirmar-btn-wizard {
+  background-color: #141414 !important;
+  border-color: #141414 !important;
+  color: #ffffff !important;
+}
+[data-tema="claro"] .siguiente-btn:hover,
+[data-tema="claro"] .confirmar-btn-wizard:hover { background-color: transparent !important; color: #141414 !important; }
+[data-tema="claro"] .atras-btn,
+[data-tema="claro"] .confirmacion-cerrar-btn { color: #141414 !important; border-color: rgba(20, 20, 20, 0.2) !important; }
+[data-tema="claro"] .atras-btn:hover,
+[data-tema="claro"] .confirmacion-cerrar-btn:hover { border-color: #141414 !important; background-color: rgba(20, 20, 20, 0.03) !important; }
+[data-tema="claro"] .cerrar-btn-wizard { color: #6b665f !important; border-color: rgba(20, 20, 20, 0.12) !important; }
+[data-tema="claro"] .cerrar-btn-wizard:hover { color: #141414 !important; border-color: #141414 !important; }
+
+[data-tema="claro"] .seleccion-alert { background-color: #f7f4ef; border-color: rgba(20, 20, 20, 0.08); color: #141414; }
+[data-tema="claro"] .seleccion-alert strong,
+[data-tema="claro"] .seleccion-alert svg { color: #141414 !important; }
+
+[data-tema="claro"] .calendar-wrapper-modern { background: #f7f4ef; border-color: rgba(20, 20, 20, 0.06); }
+[data-tema="claro"] .react-datepicker,
+[data-tema="claro"] .react-datepicker__header { background-color: #ffffff !important; border-color: rgba(20, 20, 20, 0.08) !important; color: #141414 !important; }
+[data-tema="claro"] .react-datepicker__current-month,
+[data-tema="claro"] .react-datepicker__day-name { color: #141414 !important; }
+[data-tema="claro"] .react-datepicker__day { color: #2b2925 !important; }
+[data-tema="claro"] .react-datepicker__day:hover { background-color: rgba(20, 20, 20, 0.08) !important; color: #141414 !important; }
+[data-tema="claro"] .react-datepicker__day--selected { background-color: #141414 !important; color: #ffffff !important; }
+[data-tema="claro"] .react-datepicker__day--keyboard-selected:not(.react-datepicker__day--selected) { background-color: rgba(20, 20, 20, 0.06) !important; color: #141414 !important; }
+[data-tema="claro"] .react-datepicker__day--disabled { color: rgba(20, 20, 20, 0.22) !important; text-decoration-color: rgba(20, 20, 20, 0.25); }
+[data-tema="claro"] .react-datepicker__navigation-icon::before { border-color: #141414 !important; }
+
+[data-tema="claro"] .confirmacion-resumen-box { background-color: #f7f4ef; border-color: rgba(20, 20, 20, 0.06); }
+[data-tema="claro"] .resumen-item { border-bottom-color: rgba(20, 20, 20, 0.06); }
+[data-tema="claro"] .resumen-item span:first-child { color: #6b665f; }
+[data-tema="claro"] .resumen-item span:last-child,
+[data-tema="claro"] .resumen-item a { color: #141414; }
+[data-tema="claro"] .resumen-restante span:last-child { color: var(--oro) !important; }
+[data-tema="claro"] .confirmacion-title { color: #141414; }
+
+/* Servicios / desglose / horas (reserva) */
+[data-tema="claro"] .servicio-opcion { background: #faf8f4; border-color: rgba(20, 20, 20, 0.09); color: #141414; }
+[data-tema="claro"] .servicio-opcion:hover:not(.active) { border-color: rgba(20, 20, 20, 0.35); background: #ffffff; }
+[data-tema="claro"] .servicio-opcion.active { background: #141414; border-color: #141414; color: #ffffff; }
+[data-tema="claro"] .servicio-check { background: rgba(20, 20, 20, 0.06); color: #4d4a46; }
+[data-tema="claro"] .servicio-opcion.active .servicio-check { background: #ffffff; color: #141414; }
+[data-tema="claro"] .servicio-opcion.active .servicio-duracion { color: #b5b0a8; }
+
+[data-tema="claro"] .desglose-pago { background: #faf8f4; border-color: rgba(20, 20, 20, 0.08); }
+[data-tema="claro"] .desglose-fila { color: #4d4a46; }
+[data-tema="claro"] .desglose-fila.total { color: #141414; border-top-color: rgba(20, 20, 20, 0.12); }
+[data-tema="claro"] .desglose-fila.descuento { color: var(--oro); }
+[data-tema="claro"] .desglose-hoy { background: #141414; }
+[data-tema="claro"] .desglose-hoy span { color: #b5b0a8; }
+[data-tema="claro"] .desglose-hoy strong { color: #ffffff; }
+[data-tema="claro"] .desglose-despues { background: #ffffff; border-color: rgba(20, 20, 20, 0.1); }
+[data-tema="claro"] .desglose-despues strong { color: #141414; }
+
+[data-tema="claro"] .hora-fecha-resumen,
+[data-tema="claro"] .turno-tabs { background: #f7f4ef; border-color: rgba(20, 20, 20, 0.07); }
+[data-tema="claro"] .hora-fecha-icono { background: #141414; color: #ffffff; }
+[data-tema="claro"] .hora-fecha-texto strong { color: #141414; }
+[data-tema="claro"] .hora-cambiar-fecha { border-color: rgba(20, 20, 20, 0.15); color: #4d4a46; }
+[data-tema="claro"] .turno-tab { color: #6b665f; }
+[data-tema="claro"] .turno-tab:hover:not(:disabled):not(.active) { color: #141414; background: rgba(20, 20, 20, 0.04); }
+[data-tema="claro"] .turno-tab.active { background: #141414; color: #ffffff; box-shadow: 0 4px 14px rgba(20, 20, 20, 0.2); }
+[data-tema="claro"] .turno-tab-libres { background: rgba(20, 20, 20, 0.08); }
+[data-tema="claro"] .turno-tab.active .turno-tab-libres { background: #ffffff; color: #141414; }
+[data-tema="claro"] .hora-chip { background: #ffffff; border-color: rgba(20, 20, 20, 0.12); color: #141414; }
+[data-tema="claro"] .hora-chip:hover:not(:disabled):not(.active) { border-color: rgba(20, 20, 20, 0.45); background: #faf8f4; }
+[data-tema="claro"] .hora-chip.active { background: #141414; border-color: #141414; color: #ffffff; box-shadow: 0 6px 20px rgba(20, 20, 20, 0.2); }
+[data-tema="claro"] .hora-chip.active .hora-chip-ampm { color: #b5b0a8; }
+[data-tema="claro"] .hora-chip.ocupado:disabled { background: repeating-linear-gradient(135deg, rgba(20, 20, 20, 0.04) 0 6px, transparent 6px 12px); }
+[data-tema="claro"] .leyenda-dot.libre { border-color: rgba(20, 20, 20, 0.45); }
+[data-tema="claro"] .leyenda-dot.elegido { background: #141414; }
+[data-tema="claro"] .leyenda-dot.ocupado { background: rgba(20, 20, 20, 0.15); }
+[data-tema="claro"] .hora-chip-skeleton { background: linear-gradient(90deg, rgba(20, 20, 20, 0.04), rgba(20, 20, 20, 0.09), rgba(20, 20, 20, 0.04)); background-size: 200% 100%; }
+
+[data-tema="claro"] .club-mini { background: #faf8f4; border-color: rgba(20, 20, 20, 0.08); }
+[data-tema="claro"] .club-mini.nivel-plata { --club-color: #8f98a3; }
+[data-tema="claro"] .club-mini.nivel-oro { --club-color: #b8862f; }
+[data-tema="claro"] .club-mini.nivel-black { --club-color: #141414; }
+[data-tema="claro"] .club-mini-text { color: #4d4a46; }
+[data-tema="claro"] .club-mini-text strong { color: #141414; }
+[data-tema="claro"] .club-progress { background: rgba(20, 20, 20, 0.08); }
+[data-tema="claro"] .club-inline-cta { background: rgba(168, 118, 31, 0.06); border-color: rgba(168, 118, 31, 0.35); color: var(--oro); }
+[data-tema="claro"] .club-inline-cta span { color: #4d4a46; }
+[data-tema="claro"] .club-inline-cta strong { color: #141414; }
+[data-tema="claro"] .club-confirmacion-cta { background: rgba(168, 118, 31, 0.06); }
+[data-tema="claro"] .club-confirmacion-cta strong,
+[data-tema="claro"] .club-confirmacion-cta b { color: #141414; }
+
+[data-tema="claro"] .yape-pago-card { background: linear-gradient(160deg, #f6ecfa, #fbf7fd); border-color: rgba(116, 37, 130, 0.25); }
+[data-tema="claro"] .yape-pago-monto { color: #141414; }
+[data-tema="claro"] .yape-pasos { color: #4d4a46; }
+[data-tema="claro"] .yape-pasos strong { color: #742582; }
+
+/* Popup del Club */
+[data-tema="claro"] .club-popup-overlay { background: rgba(30, 25, 18, 0.45); }
+[data-tema="claro"] .club-popup {
+  background: radial-gradient(120% 70% at 50% 0%, rgba(168, 118, 31, 0.14), transparent 60%), #ffffff;
+  border-color: rgba(168, 118, 31, 0.25);
+  box-shadow: 0 30px 80px rgba(60, 45, 20, 0.25);
+}
+[data-tema="claro"] .club-popup-kicker { color: var(--oro); }
+[data-tema="claro"] .club-popup h3 { color: #141414; }
+[data-tema="claro"] .club-popup-niveles li { background: #faf8f4; border-color: rgba(20, 20, 20, 0.07); }
+[data-tema="claro"] .club-popup-nivel,
+[data-tema="claro"] .club-popup-niveles strong { color: #141414; }
+[data-tema="claro"] .club-popup-niveles li.nivel-plata strong { color: #6f7883; }
+[data-tema="claro"] .club-popup-niveles li.nivel-oro strong { color: var(--oro); }
+[data-tema="claro"] .club-popup-primario { background: #141414; color: #ffffff; }
+[data-tema="claro"] .club-popup-secundario { color: #6b665f; }
+[data-tema="claro"] .club-popup-secundario:hover { color: #141414; }
+[data-tema="claro"] .club-popup-cerrar { background: rgba(20, 20, 20, 0.06); color: #4d4a46; }
+
+/* ---------- Pago con Yape (componente) ---------- */
+[data-tema="claro"] .pyape { background: linear-gradient(160deg, #f6ecfa, #fbf7fd); border-color: rgba(116, 37, 130, 0.28); }
+[data-tema="claro"] .pyape-monto { color: #141414 !important; }
+[data-tema="claro"] .pyape-pasos { color: #4d4a46; }
+[data-tema="claro"] .pyape-pasos strong { color: #742582; }
+[data-tema="claro"] .pyape-campo { background: #ffffff; border-color: rgba(116, 37, 130, 0.2); }
+[data-tema="claro"] .pyape-campo input { color: #141414; }
+[data-tema="claro"] .pyape-nota { color: #8c877f; }
+
+/* ---------- Perfil ---------- */
+[data-tema="claro"] .perfil-page { background: radial-gradient(70% 40% at 50% 0%, rgba(168, 118, 31, 0.08), transparent 70%), var(--bg-primary); }
+[data-tema="claro"] .perfil-contenedor { color: #4d4a46; }
+[data-tema="claro"] .perfil-header,
+[data-tema="claro"] .perfil-citas-card,
+[data-tema="claro"] .perfil-sin-sesion {
+  background: #ffffff;
+  border-color: rgba(20, 20, 20, 0.07);
+  box-shadow: 0 14px 40px rgba(60, 45, 20, 0.07);
+}
+[data-tema="claro"] .perfil-avatar { background: linear-gradient(135deg, #141414, #3a3a3a); color: #ffffff; }
+[data-tema="claro"] .perfil-email { color: #4d4a46; }
+[data-tema="claro"] .perfil-btn.primario { background: #141414; color: #ffffff; border-color: #141414; }
+[data-tema="claro"] .perfil-btn.secundario { color: #141414; border-color: rgba(20, 20, 20, 0.25); }
+[data-tema="claro"] .perfil-btn.secundario:hover { border-color: #141414; }
+[data-tema="claro"] .perfil-btn.fantasma { background: #f6f3ee; color: #4d4a46; border-color: rgba(20, 20, 20, 0.08); }
+[data-tema="claro"] .perfil-tabs { background: #f6f3ee; }
+[data-tema="claro"] .perfil-tabs button { color: #6b665f; }
+[data-tema="claro"] .perfil-tabs button span { background: rgba(20, 20, 20, 0.08); }
+[data-tema="claro"] .perfil-tabs button.active { background: #141414; color: #ffffff; }
+[data-tema="claro"] .perfil-tabs button.active span { background: #ffffff; color: #141414; }
+[data-tema="claro"] .perfil-cita { background: #faf8f4; border-color: rgba(20, 20, 20, 0.07); }
+[data-tema="claro"] .perfil-cita-fecha > svg,
+[data-tema="claro"] .perfil-cita-fecha strong,
+[data-tema="claro"] .perfil-cita-montos b { color: #141414; }
+[data-tema="claro"] .perfil-cita-montos { border-top-color: rgba(20, 20, 20, 0.1); }
+[data-tema="claro"] .perfil-codigo { background: rgba(20, 20, 20, 0.06); color: #4d4a46; }
+[data-tema="claro"] .perfil-estado.ok { color: #15803d; background: rgba(21, 128, 61, 0.1); }
+[data-tema="claro"] .perfil-estado.pendiente { color: #b45309; background: rgba(180, 83, 9, 0.1); }
+[data-tema="claro"] .perfil-cita-servicio,
+[data-tema="claro"] .perfil-dscto,
+[data-tema="claro"] .perfil-saldo.pendiente b { color: var(--oro) !important; }
+[data-tema="claro"] .perfil-citas-vacio { border-color: rgba(20, 20, 20, 0.12); }
+[data-tema="claro"] .perfil-sin-sesion-icono { background: #141414; }
+[data-tema="claro"] .perfil-sin-sesion p { color: #4d4a46; }
+
+/* La tarjeta del Club se queda oscura: luce como una tarjeta de membresía premium */
+[data-tema="claro"] .perfil-club-card { box-shadow: 0 24px 60px rgba(30, 25, 18, 0.25); }

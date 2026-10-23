@@ -1,0 +1,619 @@
+/* =========================================================
+   PÁGINA DE PERFIL
+   ========================================================= */
+.perfil-page {
+  min-height: 100vh;
+  padding: 110px 20px 80px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(70% 40% at 50% 0%, rgba(227, 185, 91, 0.07), transparent 70%),
+    var(--bg-primary);
+  font-family: var(--font-body);
+}
+
+.perfil-page span,
+.perfil-page p,
+.perfil-page li { color: inherit; }
+
+.perfil-contenedor {
+  max-width: 1080px;
+  margin: 0 auto;
+  color: #bdbdbd;
+}
+
+/* ---------- Botones ---------- */
+.perfil-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.perfil-btn.primario { background: #ffffff; color: #0a0a0a; border: 1px solid #ffffff; }
+.perfil-btn.primario:hover { transform: translateY(-1px); }
+.perfil-btn.secundario { background: transparent; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.25); }
+.perfil-btn.secundario:hover { border-color: #ffffff; }
+.perfil-btn.fantasma { background: rgba(255, 255, 255, 0.04); color: #cfcfcf; border: 1px solid rgba(255, 255, 255, 0.08); }
+.perfil-btn.fantasma:hover { color: #ff7b7b; border-color: rgba(255, 123, 123, 0.4); }
+.perfil-btn.pequeno { padding: 9px 14px; font-size: 0.8rem; }
+.perfil-btn:focus-visible,
+.perfil-tabs button:focus-visible,
+.perfil-cita-cancelar:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+
+/* ---------- Cabecera ---------- */
+.perfil-header {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 28px;
+  margin-bottom: 22px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01));
+}
+
+.perfil-avatar {
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-heading);
+  font-size: 1.9rem;
+  letter-spacing: 1px;
+  color: #0a0a0a;
+  background: linear-gradient(135deg, #ffffff, #bdbdbd);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.perfil-identidad {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.perfil-saludo { font-size: 0.8rem; color: #8a8a8a; }
+
+.perfil-identidad h1 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.perfil-email { font-size: 0.9rem; color: #cfcfcf; overflow-wrap: anywhere; }
+.perfil-miembro { font-size: 0.75rem; color: #7a7a7a; margin-top: 2px; }
+
+.perfil-header-acciones {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ---------- Grid ---------- */
+.perfil-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+/* ---------- Tarjeta del Club ---------- */
+.perfil-club-card {
+  --club: #c9c9c9;
+  --club-glow: rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+  padding: 28px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background:
+    radial-gradient(90% 60% at 100% 0%, var(--club-glow), transparent 70%),
+    linear-gradient(180deg, #151516, #0d0d0e);
+}
+
+.perfil-club-card.nivel-plata { --club: #d7dce2; --club-glow: rgba(215, 220, 226, 0.12); }
+.perfil-club-card.nivel-oro { --club: #e3b95b; --club-glow: rgba(227, 185, 91, 0.18); border-color: rgba(227, 185, 91, 0.3); }
+.perfil-club-card.nivel-black { --club: #ffffff; --club-glow: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.25); }
+
+.perfil-club-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.perfil-club-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: #e3b95b;
+}
+
+.perfil-club-activo {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #0a0a0a;
+  background: var(--club);
+}
+
+.perfil-club-principal {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.perfil-club-label {
+  font-size: 0.75rem;
+  color: #8a8a8a;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.perfil-club-nivel {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: clamp(2.6rem, 6vw, 3.6rem);
+  line-height: 1;
+  margin: 4px 0 0;
+  color: var(--club);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.perfil-club-descuento {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.perfil-club-descuento strong {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.perfil-club-descuento span { font-size: 0.78rem; color: #8a8a8a; }
+
+.perfil-club-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.perfil-club-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.perfil-club-stats strong { font-size: 1.6rem; color: #ffffff; font-weight: 700; line-height: 1.1; }
+.perfil-club-stats span { font-size: 0.76rem; color: #8a8a8a; }
+
+.perfil-club-progreso { margin-bottom: 24px; }
+
+.perfil-club-barra {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.perfil-club-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c9973a, #f3d48a);
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.perfil-club-meta { font-size: 0.84rem; color: #cfcfcf; }
+.perfil-club-meta b { color: #e3b95b; }
+
+.perfil-club-niveles {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  position: relative;
+}
+
+.perfil-club-niveles::before {
+  content: "";
+  position: absolute;
+  top: 11px;
+  left: 12.5%;
+  right: 12.5%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.perfil-club-niveles li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.perfil-nivel-punto {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #1b1b1c;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  color: #0a0a0a;
+  font-size: 0.8rem;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.perfil-club-niveles li.alcanzado .perfil-nivel-punto { background: #e3b95b; border-color: #e3b95b; }
+.perfil-club-niveles li.actual .perfil-nivel-punto { box-shadow: 0 0 0 5px rgba(227, 185, 91, 0.2); }
+.perfil-nivel-nombre { font-size: 0.8rem; font-weight: 600; color: #ffffff; }
+.perfil-club-niveles li:not(.alcanzado) .perfil-nivel-nombre { color: #7a7a7a; }
+.perfil-nivel-detalle { font-size: 0.68rem; color: #7a7a7a; }
+
+.perfil-club-skeleton,
+.perfil-cita-skeleton {
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+  background-size: 200% 100%;
+  animation: perfilShine 1.2s ease-in-out infinite;
+}
+
+.perfil-club-skeleton { height: 260px; }
+.perfil-cita-skeleton { height: 78px; }
+
+@keyframes perfilShine {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.perfil-club-error { font-size: 0.88rem; }
+
+/* ---------- Citas ---------- */
+.perfil-citas-card {
+  padding: 26px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.perfil-citas-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.perfil-citas-cabecera h2 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 1.6rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.perfil-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 5px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.perfil-tabs button {
+  padding: 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #9a9a9a;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.perfil-tabs button span {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.perfil-tabs button.active { background: #ffffff; color: #0a0a0a; }
+.perfil-tabs button.active span { background: #0a0a0a; color: #ffffff; }
+
+.perfil-citas-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.perfil-cita {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.perfil-cita.cancelada { opacity: 0.55; }
+
+.perfil-cita-fecha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #8a8a8a;
+}
+
+.perfil-cita-fecha > svg { font-size: 1.1rem; color: #ffffff; flex-shrink: 0; }
+.perfil-cita-fecha div { display: flex; flex-direction: column; }
+.perfil-cita-fecha strong { color: #ffffff; font-size: 0.95rem; font-weight: 600; text-transform: capitalize; }
+.perfil-cita-fecha span { font-size: 0.8rem; display: inline-flex; align-items: center; gap: 5px; }
+
+.perfil-cita-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.perfil-estado,
+.perfil-codigo,
+.perfil-dscto {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.perfil-estado.ok { color: #4ade80; background: rgba(74, 222, 128, 0.1); }
+.perfil-estado.pendiente { color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
+.perfil-estado.cancelada { color: #f87171; background: rgba(248, 113, 113, 0.1); }
+.perfil-codigo { color: #bdbdbd; background: rgba(255, 255, 255, 0.06); font-family: monospace; }
+.perfil-dscto { color: #e3b95b; background: rgba(227, 185, 91, 0.1); }
+
+.perfil-cita-cancelar {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #8a8a8a;
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.perfil-cita-cancelar:hover { color: #f87171; }
+
+.perfil-citas-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 34px 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.perfil-citas-vacio > svg { font-size: 1.5rem; color: #5a5a5a; }
+.perfil-citas-vacio p { margin: 0; font-size: 0.88rem; }
+
+/* ---------- Sin sesión / cargando ---------- */
+.perfil-sin-sesion {
+  max-width: 440px;
+  margin: 40px auto 0;
+  padding: 40px 28px;
+  border-radius: 22px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #151516, #0d0d0e);
+}
+
+.perfil-sin-sesion-icono {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 16px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-size: 1.3rem;
+}
+
+.perfil-sin-sesion h1 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 2.2rem;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+
+.perfil-sin-sesion p { font-size: 0.92rem; line-height: 1.6; margin: 0 0 22px; color: #bdbdbd; }
+
+.perfil-sin-sesion-acciones {
+  display: grid;
+  gap: 10px;
+}
+
+.perfil-cargando {
+  display: grid;
+  place-items: center;
+  min-height: 50vh;
+}
+
+.perfil-spinner {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-top-color: #ffffff;
+  animation: perfilGiro 0.8s linear infinite;
+}
+
+@keyframes perfilGiro { to { transform: rotate(360deg); } }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .perfil-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .perfil-page { padding: 92px 14px 90px; }
+  .perfil-header {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 20px;
+    border-radius: 18px;
+  }
+  .perfil-avatar { width: 60px; height: 60px; border-radius: 18px; font-size: 1.5rem; }
+  .perfil-header-acciones { width: 100%; justify-content: stretch; }
+  .perfil-header-acciones > * { flex: 1; }
+  .perfil-club-card, .perfil-citas-card { padding: 20px; border-radius: 18px; }
+  .perfil-club-descuento strong { font-size: 2rem; }
+  .perfil-club-stats strong { font-size: 1.35rem; }
+  .perfil-nivel-detalle { font-size: 0.62rem; }
+  .perfil-cita { grid-template-columns: 1fr; }
+  .perfil-cita-meta { justify-content: flex-start; }
+}
+
+/* ---------- Servicio, montos y pago del restante ---------- */
+.perfil-cita-servicio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem !important;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #e3b95b !important;
+  margin-bottom: 2px;
+}
+
+.perfil-en-curso {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #0a0a0a !important;
+  background: #4ade80;
+  animation: perfilPulso 1.6s ease-in-out infinite;
+}
+
+@keyframes perfilPulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+}
+
+.perfil-cita.en-curso {
+  border-color: rgba(74, 222, 128, 0.45);
+  background: linear-gradient(160deg, rgba(74, 222, 128, 0.07), rgba(255, 255, 255, 0.02));
+}
+
+.perfil-cita-montos {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  font-size: 0.78rem;
+  color: #8a8a8a;
+}
+
+.perfil-cita-montos b { color: #ffffff; font-weight: 600; }
+.perfil-saldo.pendiente b { color: #e3b95b; }
+.perfil-saldo.pagado { color: #4ade80; }
+.perfil-saldo.pagado b { color: #4ade80; }
+
+.perfil-saldo-aviso {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.76rem;
+  color: #8a8a8a;
+}
+
+.perfil-pagar-saldo {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+.perfil-pagar-titulo {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #4ade80 !important;
+}
+
+.perfil-pago-ok {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  color: #4ade80 !important;
+  background: rgba(74, 222, 128, 0.1);
+}

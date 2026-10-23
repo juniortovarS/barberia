@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -8,97 +8,130 @@ import Section3 from "./components/section3";
 import Reseñas from "./components/Reseña";
 import Footer from "./components/Footer";
 import StickyBanner from "./components/StickyBanner";
-
-
-import Contacto from './pages/Contacto'; 
-import Cita from "./pages/Cita";
 import Servicio from "./components/Servicio";
-import PaginaServicios from "./pages/Servicios";
-import Blog from "./pages/Blog";
-import Tienda from "./pages/Tienda";
-import Carrito from "./pages/Carrito"; // ✅ NUEVA PÁGINA CARRITO
-import Checkout from "./pages/Checkout"; // importa tu página
-import Confirmacion from "./pages/Confirmacion";
-import Admin from "./pages/Admin"; // ✅ IMPORTA PANEL DE ADMINISTRADOR
+import ClubFidelidad from "./components/ClubFidelidad";
+import WhatsAppFlotante from "./components/WhatsAppFlotante";
 
 import { CarritoProvider } from "./components/CarritoContext";
-import { AuthProvider } from "./components/AuthContext"; // ✅ IMPORTA AUTH CONTEXT
-import ProtectedRoute from "./components/ProtectedRoute"; // ✅ IMPORTA PROTECTED ROUTE
+import { AuthProvider } from "./components/AuthContext";
+import { TemaProvider } from "./components/TemaContext";
+import "./styles/TemaClaro.css";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// Import assets to preload
-import citaBg from "./assets/cita.png";
-import serviciosBg from "./assets/imgSer.png";
-import studio1 from "./assets/studio1.png";
-import studio2 from "./assets/studio2.png";
-import studio3 from "./assets/studio3.png";
+import citaBg from "./assets/cita.webp";
+
+// 🚀 Cada página se descarga solo cuando el usuario la visita (la portada carga mucho más rápido)
+const Cita = lazy(() => import("./pages/Cita"));
+const Contacto = lazy(() => import("./pages/Contacto"));
+const PaginaServicios = lazy(() => import("./pages/Servicios"));
+const Blog = lazy(() => import("./pages/Blog"));
+const Tienda = lazy(() => import("./pages/Tienda"));
+const Carrito = lazy(() => import("./pages/Carrito"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const Confirmacion = lazy(() => import("./pages/Confirmacion"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Perfil = lazy(() => import("./pages/Perfil"));
+
+const CargandoPagina = () => (
+  <div className="page-loader" aria-label="Cargando">
+    <span className="page-loader-bar" />
+  </div>
+);
 
 function App() {
   const location = useLocation();
 
   useEffect(() => {
-    // 🚀 Background Preloading of large images to eliminate lag on page changes
-    const imagesToPreload = [citaBg, serviciosBg, studio1, studio2, studio3];
-    imagesToPreload.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
+    // Precarga en segundo plano del fondo de reservas y del código de esa página
+    const img = new Image();
+    img.src = citaBg;
+    const t = setTimeout(() => { import("./pages/Cita"); }, 2500);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
-    // 🚀 Re-bind scroll reveal elements whenever route changes
-    const revealElements = document.querySelectorAll(".reveal");
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    // 🚀 Animaciones al hacer scroll: cada elemento se anima una sola vez y deja de observarse
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("active");
-          } else {
-            entry.target.classList.remove("active");
+            observer.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.05 }
+      { threshold: 0.05, rootMargin: "0px 0px -40px 0px" }
     );
-    
-    revealElements.forEach((el) => observer.observe(el));
 
-    return () => observer.disconnect();
-  }, [location]);
+    // Las páginas se cargan de forma diferida: se vuelven a buscar elementos cuando aparecen
+    const observarNuevos = () => {
+      document.querySelectorAll(".reveal:not(.active):not([data-reveal])").forEach((el) => {
+        el.setAttribute("data-reveal", "");
+        observer.observe(el);
+      });
+    };
+    observarNuevos();
+    let frame = null;
+    const mutation = new MutationObserver(() => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => { frame = null; observarNuevos(); });
+    });
+    mutation.observe(document.getElementById("root"), { childList: true, subtree: true });
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      observer.disconnect();
+      mutation.disconnect();
+    };
+  }, [location.pathname]);
+
   return (
+    <TemaProvider>
     <AuthProvider>
       <CarritoProvider>
         <Navbar />
 
-        <Routes>
-          {/* HOME */}
-          <Route
-            path="/"
-            element={
-              <>
-                <StickyBanner />
-                <Section1 />
-                <Section2 />
-                <Section3 />
-                <Servicio />
-                <Reseñas />
-                <Footer />
-              </>
-            }
-          />
+        <Suspense fallback={<CargandoPagina />}>
+          <Routes>
+            {/* HOME */}
+            <Route
+              path="/"
+              element={
+                <>
+                  <StickyBanner />
+                  <Section1 />
+                  <Section2 />
+                  <Section3 />
+                  <Servicio />
+                  <ClubFidelidad />
+                  <Reseñas />
+                  <Footer />
+                </>
+              }
+            />
 
-          {/* PÁGINAS EXTERNAS */}
-          <Route path="/cita" element={<Cita />} />
-          <Route path="/servicios" element={<PaginaServicios />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/contacto" element={<Contacto />} />
-          <Route path="/tienda" element={<Tienda />} />
-          <Route path="/carrito" element={<Carrito />} /> {/* ✅ AÑADIDA RUTA */}
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/confirmacion" element={<Confirmacion />} />
-          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} /> {/* ✅ RUTA PROTEGIDA */}
-        </Routes>
+            {/* PÁGINAS */}
+            <Route path="/cita" element={<Cita />} />
+            <Route path="/servicios" element={<PaginaServicios />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/contacto" element={<Contacto />} />
+            <Route path="/tienda" element={<Tienda />} />
+            <Route path="/carrito" element={<Carrito />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/confirmacion" element={<Confirmacion />} />
+            <Route path="/perfil" element={<Perfil />} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          </Routes>
+        </Suspense>
+
+        {location.pathname !== "/admin" && <WhatsAppFlotante />}
       </CarritoProvider>
     </AuthProvider>
+    </TemaProvider>
   );
 }
 

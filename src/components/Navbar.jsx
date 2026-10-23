@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles/Navbar.css";
-import logonav from "../assets/logonav.png";
+import "../styles/NavbarClub.css";
 import { FaShoppingCart, FaSearch, FaBars, FaTimes, FaUser } from "react-icons/fa";
 import { useCarrito } from "./CarritoContext";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../supabaseClient"; // ✅ IMPORTA CLIENTE DE SUPABASE
+import { ADMIN_EMAILS } from "../config";
+import TemaToggle from "./TemaToggle";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = React.useState(false);
@@ -25,10 +27,6 @@ const Navbar = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [resetNewPassword, setResetNewPassword] = useState("");
 
-  // Estados de Reservas del Usuario
-  const [misReservas, setMisReservas] = useState([]);
-  const [loadingReservas, setLoadingReservas] = useState(false);
-
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
@@ -40,7 +38,7 @@ const Navbar = () => {
     aumentarCantidad,
     disminuirCantidad,
   } = useCarrito();
-  const { user, isAdmin, login, signup, logout } = useAuth();
+  const { user, isAdmin, login, signup, logout, recuperandoClave, setRecuperandoClave } = useAuth();
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -55,40 +53,6 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const fetchMisReservas = useCallback(async () => {
-    if (!user) return;
-    setLoadingReservas(true);
-    try {
-      const { data, error } = await supabase
-        .from("reservas")
-        .select("*")
-        .eq("email", user.email)
-        .order("fecha_registro", { ascending: false });
-      if (error) throw error;
-      setMisReservas(data || []);
-    } catch (err) {
-      console.error("Error al cargar tus reservas:", err);
-    } finally {
-      setLoadingReservas(false);
-    }
-  }, [user]);
-
-  const handleCancelarReserva = async (id) => {
-    if (!window.confirm("¿Estás seguro de que deseas cancelar esta reserva?")) return;
-    try {
-      const { error } = await supabase
-        .from("reservas")
-        .update({ estado: 'cancelled' })
-        .eq("id", id);
-      if (error) throw error;
-      
-      setMisReservas(prev => prev.map(r => r.id === id ? { ...r, estado: 'cancelled' } : r));
-    } catch (err) {
-      console.error("Error al cancelar la reserva:", err);
-      alert("No se pudo cancelar la reserva.");
-    }
-  };
-
   useEffect(() => {
     setMostrarCarrito(false);
     setMostrarAuth(false);
@@ -96,46 +60,46 @@ const Navbar = () => {
     setIsResettingPassword(false); // Resetear modo restablecer al cambiar de página
   }, [location.pathname, setMostrarCarrito]);
 
+  // Abrir el modal de registro / login desde otras partes de la web (Club de fidelidad, reservas)
   useEffect(() => {
-    if (mostrarAuth && user) {
-      fetchMisReservas();
-    }
-  }, [mostrarAuth, user, fetchMisReservas]);
+    const abrir = (e) => {
+      setIsRegistering(!!e.detail?.registro);
+      setIsResettingPassword(false);
+      setAuthError("");
+      setAuthSuccess("");
+      setMenuOpen(false);
+      setMostrarAuth(true);
+    };
+    window.addEventListener("abrir-auth", abrir);
+    return () => window.removeEventListener("abrir-auth", abrir);
+  }, []);
 
-  // Cerrar el popup de autenticación al hacer click afuera o hacer scroll en la página principal
+  // Al volver desde el enlace de "recuperar contraseña" del correo se muestra el formulario de nueva clave
   useEffect(() => {
-    const handleScrollClose = () => {
-      if (mostrarAuth) {
-        setMostrarAuth(false);
-      }
-    };
-
-    const handleClickOutsideClose = (event) => {
-      if (!mostrarAuth) return;
-      
-      const authPopup = document.querySelector('.auth-popup-navbar');
-      const userIcon = document.querySelector('.user-icon-wrapper');
-      
-      if (
-        authPopup && 
-        !authPopup.contains(event.target) && 
-        userIcon && 
-        !userIcon.contains(event.target)
-      ) {
-        setMostrarAuth(false);
-      }
-    };
-
-    if (mostrarAuth) {
-      window.addEventListener("scroll", handleScrollClose, { passive: true });
-      document.addEventListener("mousedown", handleClickOutsideClose);
+    if (recuperandoClave) {
+      setAuthError("");
+      setAuthSuccess("");
+      setMostrarAuth(true);
     }
+  }, [recuperandoClave]);
 
+  const cerrarAuth = () => {
+    if (recuperandoClave) return; // hay que terminar de crear la nueva contraseña
+    setMostrarAuth(false);
+    setIsResettingPassword(false);
+  };
+
+  // Modal centrado: Escape lo cierra y la página de fondo no se desplaza
+  useEffect(() => {
+    if (!mostrarAuth) return undefined;
+    const onKey = (e) => { if (e.key === "Escape" && !recuperandoClave) setMostrarAuth(false); };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("scroll", handleScrollClose);
-      document.removeEventListener("mousedown", handleClickOutsideClose);
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
     };
-  }, [mostrarAuth]);
+  }, [mostrarAuth, recuperandoClave]);
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
@@ -175,7 +139,7 @@ const Navbar = () => {
         setAuthSuccess("Sesión iniciada con éxito");
         setTimeout(() => {
           setMostrarAuth(false);
-          const isUserAdmin = authEmail === 'juniortovaradmin@gmail.com' || authEmail === 'juniortovar601@gmail.com' || authEmail.startsWith('admin') || authEmail.endsWith('@barberia.com') || res.data.user?.user_metadata?.role === 'admin';
+          const isUserAdmin = ADMIN_EMAILS.includes(authEmail.trim().toLowerCase()) || res.data.user?.app_metadata?.role === 'admin';
           if (isUserAdmin) {
             navigate("/admin");
           }
@@ -187,58 +151,60 @@ const Navbar = () => {
     setAuthLoading(false);
   };
 
+  // 1) Pedir el enlace de recuperación: Supabase envía un correo al dueño de la cuenta
   const handleResetSubmit = async (e) => {
     e.preventDefault();
     setAuthError("");
     setAuthSuccess("");
     setAuthLoading(true);
-
-    if (!resetEmail || !resetNewPassword) {
-      setAuthError("Por favor completa todos los campos.");
-      setAuthLoading(false);
-      return;
-    }
-
     try {
-      // Llamar al procedimiento en Supabase que cambia la contraseña directamente por Email
-      const { data, error } = await supabase.rpc('reset_user_password', {
-        user_email: resetEmail,
-        new_pass: resetNewPassword
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+        redirectTo: window.location.origin,
       });
-
       if (error) throw error;
-
-      if (data === "Contraseña restablecida con éxito") {
-        setAuthSuccess("✓ Contraseña actualizada con éxito. Inicia sesión.");
-        
-        // Limpiar campos
-        const capturedEmail = resetEmail;
-        setResetEmail("");
-        setResetNewPassword("");
-        
-        // Volver a login tras 2 segundos
-        setTimeout(() => {
-          setIsResettingPassword(false);
-          setAuthEmail(capturedEmail);
-          setAuthPassword("");
-          setAuthSuccess("");
-        }, 2000);
-      } else {
-        setAuthError(data || "No se pudo actualizar la contraseña.");
-      }
+      setAuthSuccess("Si el correo está registrado, te enviamos un enlace para crear una nueva contraseña. Revisa tu bandeja (y spam).");
     } catch (err) {
-      console.error("Error al restablecer contraseña:", err);
-      setAuthError("Error de validación. Asegúrate de ejecutar la consulta SQL en Supabase.");
+      console.error("Error al solicitar recuperación:", err);
+      setAuthError("No pudimos enviar el correo. Inténtalo de nuevo en unos minutos.");
     } finally {
       setAuthLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    const res = await logout();
-    if (res.success) {
-      setMostrarAuth(false);
-      navigate("/");
+  // 2) Guardar la nueva contraseña (solo funciona con la sesión temporal que crea el enlace del correo)
+  const handleNuevaClaveSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthSuccess("");
+    if (resetNewPassword.length < 6) {
+      setAuthError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: resetNewPassword });
+      if (error) throw error;
+      setResetNewPassword("");
+      setAuthSuccess("Contraseña actualizada. Ya tienes tu sesión iniciada.");
+      setTimeout(() => {
+        setRecuperandoClave(false);
+        setAuthSuccess("");
+      }, 1800);
+    } catch (err) {
+      console.error("Error al actualizar contraseña:", err);
+      const codigo = err?.code || "";
+      const mensaje = (err?.message || "").toLowerCase();
+      if (codigo === "same_password" || mensaje.includes("different from the old")) {
+        setAuthError("La nueva contraseña debe ser distinta a la anterior.");
+      } else if (codigo === "weak_password" || mensaje.includes("password should")) {
+        setAuthError(`La contraseña es muy débil. ${err.message}`);
+      } else if (codigo === "session_not_found" || err?.name === "AuthSessionMissingError" || mensaje.includes("session")) {
+        setAuthError("El enlace expiró o ya se usó. Solicita uno nuevo desde \"¿La olvidaste?\".");
+      } else {
+        setAuthError(`No se pudo guardar la contraseña: ${err?.message || "error desconocido"}`);
+      }
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -278,11 +244,8 @@ const Navbar = () => {
           transparent ? "navbar-transparent" : ""
         }`}
       >
-        <div className="navbar-left">
-          <Link to="/">
-            <img src={logonav} alt="Logo" className="navbar-logo" />
-          </Link>
-        </div>
+        {/* Se mantiene vacío para que los enlaces sigan centrados */}
+        <div className="navbar-left" aria-hidden="true" />
 
         {/* Links de escritorio modificar el navbar */}
         <div className="navbar-center">
@@ -301,13 +264,22 @@ const Navbar = () => {
         </div>
 
         <div className="navbar-right">
+          <TemaToggle />
+
           {/* Icono de Persona para Login / Perfil */}
           <div
             className="icon-wrapper user-icon-wrapper"
             onClick={() => {
-              setMostrarAuth(!mostrarAuth);
               setMostrarCarrito(false);
+              if (user) {
+                navigate("/perfil");
+              } else {
+                setIsRegistering(false);
+                setMostrarAuth(true);
+              }
             }}
+            role="button"
+            aria-label={user ? "Ver mi perfil" : "Iniciar sesión"}
             style={{ cursor: "pointer" }}
           >
             {user ? (
@@ -326,7 +298,7 @@ const Navbar = () => {
           >
             <FaShoppingCart className="icon" />
           </div>
-          <div className="icon-wrapper">
+          <div className="icon-wrapper icon-busqueda">
             <FaSearch className="icon" />
           </div>
 
@@ -359,6 +331,21 @@ const Navbar = () => {
               </Link>
             </li>
           ))}
+          <li className="mobile-menu-item" style={{ animationDelay: `${links.length * 0.07}s` }}>
+            {user ? (
+              <Link to="/perfil" className="mobile-menu-link mobile-menu-link-cuenta" onClick={() => setMenuOpen(false)}>
+                MI PERFIL
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="mobile-menu-link mobile-menu-link-cuenta"
+                onClick={() => { setMenuOpen(false); setIsRegistering(false); setMostrarAuth(true); }}
+              >
+                INICIAR SESIÓN
+              </button>
+            )}
+          </li>
         </ul>
       </div>
 
@@ -413,104 +400,59 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* Popup de Autenticación */}
-      {mostrarAuth && (
+      {/* Modal de Autenticación (centrado) */}
+      {mostrarAuth && (!user || recuperandoClave) && (
+        <div
+          className="auth-modal-overlay"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) cerrarAuth(); }}
+        >
         <div
           className="auth-popup-navbar"
           role="dialog"
           aria-modal="true"
           aria-label="Autenticación de usuario"
         >
-          <button
-            className="cerrar-auth-btn"
-            onClick={() => {
-              setMostrarAuth(false);
-              setIsResettingPassword(false);
-            }}
-            aria-label="Cerrar ventana"
-          >
-            ×
-          </button>
+          {!recuperandoClave && (
+            <button
+              className="cerrar-auth-btn"
+              onClick={cerrarAuth}
+              aria-label="Cerrar ventana"
+            >
+              ×
+            </button>
+          )}
 
-          {user ? (
-            <div className="auth-logged-in-box">
-              <div className="auth-logged-in-header">
-                <div className="profile-avatar-large">
-                  {user.user_metadata?.nombre ? user.user_metadata.nombre.substring(0, 2).toUpperCase() : user.email.substring(0, 2).toUpperCase()}
-                  <span className="avatar-pulse-dot"></span>
+          <div className="auth-modal-brand">
+            <span className="auth-modal-kicker">Club De Fidelidad JP</span>
+            <p className="auth-modal-lead">
+              {isRegistering ? 'Crea tu cuenta y empieza a acumular descuentos.' : 'Bienvenido de vuelta.'}
+            </p>
+          </div>
+
+          {recuperandoClave ? (
+            <div className="auth-form-box">
+              <h4 style={{ margin: "0 0 16px 0", letterSpacing: "1px", textTransform: "uppercase", fontSize: "1.1rem" }}>
+                🔒 Crea tu nueva contraseña
+              </h4>
+              <form onSubmit={handleNuevaClaveSubmit} className="auth-form">
+                <div className="auth-form-group">
+                  <label htmlFor="nueva-clave">Nueva Contraseña</label>
+                  <input
+                    id="nueva-clave"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={resetNewPassword}
+                    onChange={(e) => setResetNewPassword(e.target.value)}
+                    required
+                  />
                 </div>
-                <h4 className="profile-greeting">¡Hola, {user.user_metadata?.nombre || 'Cliente'}!</h4>
-                <span className="profile-subtitle">Sesión Activa</span>
-              </div>
-
-              <div className="user-profile-card">
-                <div className="profile-card-section">
-                  <span className="profile-card-label">Correo Electrónico</span>
-                  <span className="profile-card-value" style={{ textTransform: 'none' }}>{user.email}</span>
-                </div>
-
-                <div className="profile-card-section">
-                  <span className="profile-card-label">Tipo de Usuario</span>
-                  <div className="profile-card-badge-wrapper">
-                    <span className={`profile-badge-modern ${isAdmin ? 'admin-badge' : 'customer-badge'}`}>
-                      {isAdmin ? 'Administrador ' : 'Cliente 💈'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* ✅ LISTADO DE RESERVAS DEL CLIENTE */}
-              <div className="user-profile-bookings">
-                <h5 className="bookings-section-title">📅 Tus Reservas</h5>
-                {loadingReservas ? (
-                  <div className="bookings-loading-box">
-                    <div className="auth-spinner"></div>
-                    <span>Cargando citas...</span>
-                  </div>
-                ) : misReservas.length === 0 ? (
-                  <p className="no-bookings-text">No tienes citas registradas.</p>
-                ) : (
-                  <div className="user-bookings-list">
-                    {misReservas.map((res) => (
-                      <div key={res.id} className="user-booking-card">
-                        <div className="booking-card-top">
-                          <span className="booking-card-date">📅 {res.fecha_cita}</span>
-                          <span className={`booking-card-status ${res.estado || 'pending'}`}>
-                            {res.estado === 'approved' && 'Confirmado'}
-                            {res.estado === 'cancelled' && 'Cancelado'}
-                            {(res.estado === 'pending' || !res.estado) && 'Pendiente'}
-                          </span>
-                        </div>
-                        <div className="booking-card-mid">
-                          <span className="booking-card-time">⏰ {res.hora_cita}</span>
-                          <span className="booking-card-code">Cod: {res.codigo || 'S/C'}</span>
-                        </div>
-                        {res.estado !== 'cancelled' && (
-                          <button
-                            type="button"
-                            className="btn-cancel-booking-inline"
-                            onClick={() => handleCancelarReserva(res.id)}
-                          >
-                            Cancelar Reserva
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div className="auth-logged-in-actions">
-                {isAdmin && (
-                  <Link to="/admin" className="auth-action-btn-admin" onClick={() => setMostrarAuth(false)}>
-                    Gestionar Panel de Control
-                  </Link>
-                )}
-
-                <button className="auth-action-btn-logout" onClick={handleLogout}>
-                  Cerrar Sesión
+                {authError && <div className="auth-error-text">⚠️ {authError}</div>}
+                {authSuccess && <div className="auth-success-text">✓ {authSuccess}</div>}
+                <button type="submit" className="auth-submit-btn" disabled={authLoading}>
+                  {authLoading ? <div className="auth-spinner"></div> : "Guardar Nueva Contraseña"}
                 </button>
-              </div>
+              </form>
             </div>
           ) : isResettingPassword ? (
             // ✅ VISTA RESTABLECER CONTRASEÑA (SÓLO EMAIL Y NUEVA CONTRASEÑA)
@@ -532,17 +474,9 @@ const Navbar = () => {
                   />
                 </div>
 
-                <div className="auth-form-group">
-                  <label htmlFor="reset-new-password">Nueva Contraseña</label>
-                  <input
-                    id="reset-new-password"
-                    type="password"
-                    placeholder="Escribe tu nueva contraseña"
-                    value={resetNewPassword}
-                    onChange={(e) => setResetNewPassword(e.target.value)}
-                    required
-                  />
-                </div>
+                <p style={{ fontSize: "0.8rem", lineHeight: 1.5, margin: "0 0 14px" }}>
+                  Te enviaremos un enlace seguro a tu correo para que crees una nueva contraseña.
+                </p>
 
                 {authError && <div className="auth-error-text">⚠️ {authError}</div>}
                 {authSuccess && <div className="auth-success-text">✓ {authSuccess}</div>}
@@ -552,7 +486,7 @@ const Navbar = () => {
                   className="auth-submit-btn"
                   disabled={authLoading}
                 >
-                  {authLoading ? <div className="auth-spinner"></div> : "Guardar Nueva Contraseña"}
+                  {authLoading ? <div className="auth-spinner"></div> : "Enviar enlace"}
                 </button>
 
                 <button
@@ -665,23 +599,9 @@ const Navbar = () => {
                 </button>
               </form>
               
-              {!isRegistering && (
-                <div className="admin-shortcut-wrapper">
-                  <button
-                    className="admin-shortcut-btn"
-                    onClick={() => {
-                      setAuthEmail("juniortovaradmin@gmail.com");
-                      setAuthPassword("");
-                      setAuthError("");
-                      setAuthSuccess("Por favor ingresa la contraseña de administrador.");
-                    }}
-                  >
-                    Ingresar como administrador
-                  </button>
-                </div>
-              )}
             </div>
           )}
+        </div>
         </div>
       )}
     </>

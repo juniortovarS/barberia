@@ -9,7 +9,7 @@ app.use(cors());
 
 // 🔐 Configuración de MercadoPago
 mercadopago.configure({
-  access_token: "APP_USR-3258188625824242-071103-aba7caf4da3a3236d31dd66e564a9bef-2553371836",
+  access_token: process.env.MP_ACCESS_TOKEN || "",
 });
 
 // 💾 Conexión a la base de datos MySQL
