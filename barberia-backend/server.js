@@ -4,11 +4,15 @@ const express = require("express");
 const cors = require("cors");
 const mercadopago = require("mercadopago");
 const { createClient } = require("@supabase/supabase-js");
+const { crearClienteMP, verificarFirmaWebhook } = require("./mercadopago-orders");
+const { crearServicioPagos, crearRepositorioSupabase } = require("./pagos-reserva");
 
 // ✅ Variables de entorno obligatorias (configúralas en Render → Environment)
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://cywgxsocudepyejqnuuc.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_KEY; // service_role key (solo en el servidor)
+// Clave secreta de los webhooks (Tus integraciones → Webhooks → Clave secreta)
+const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET;
 const RESERVA_MONTO = Number(process.env.RESERVA_MONTO || 20); // adelanto por reserva
 const ADMIN_PHONE = process.env.ADMIN_PHONE || "+51951038509";
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "juniortovaradmin@gmail.com,juniortovar601@gmail.com")
@@ -137,6 +141,16 @@ const verificarEsquema = async () => {
   if (error) console.warn("⚠️ Falta ejecutar supabase/migracion_servicios_y_saldo.sql en Supabase:", error.message);
   return esquemaListo;
 };
+
+// Los cobros con Yape necesitan la tabla de supabase/migracion_pagos_yape.sql
+let pagosListos = false;
+const verificarEsquemaPagos = async () => {
+  if (pagosListos) return true;
+  const { error } = await supabase.from("pagos_yape").select("id").limit(1);
+  pagosListos = !error;
+  if (error) console.warn("⚠️ Falta ejecutar supabase/migracion_pagos_yape.sql en Supabase:", error.message);
+  return pagosListos;
+};
 verificarEsquema();
 
 const MENSAJE_SIN_MIGRACION = "El sistema de reservas se está actualizando. Inténtalo en unos minutos.";
@@ -263,63 +277,77 @@ const MENSAJES_RECHAZO = {
   processing_error: "Yape no pudo procesar el pago. Inténtalo de nuevo en unos minutos.",
   rejected_by_issuer: "Yape rechazó el pago. Verifica que el celular sea el de tu cuenta Yape y genera un código nuevo.",
 };
-// Rechazo del antifraude de Mercado Pago (el nombre varía según la API)
+// Rechazo del antifraude de Mercado Pago: es una decisión de su sistema de riesgo, no se debe insistir
 ["high_risk", "cc_rejected_high_risk", "rejected_high_risk"].forEach((k) => {
-  MENSAJES_RECHAZO[k] = "Mercado Pago bloqueó el pago por seguridad. Espera unos minutos antes de reintentar (varios intentos seguidos empeoran el bloqueo) o usa otra cuenta Yape.";
+  MENSAJES_RECHAZO[k] = "Mercado Pago no aprobó este pago por sus controles de seguridad. No se realizó ningún cobro. Escríbenos por WhatsApp para coordinar tu adelanto.";
 });
 
-// Devuelve { ok: true, id } o { ok: false, status, error }
-// `descripcion` y `deviceId` ayudan al antifraude de Mercado Pago a aprobar el pago
-const cobrarYape = async ({ monto, email, celular, token, referencia, descripcion, deviceId }) => {
-  const importe = redondear(monto).toFixed(2);
-  const concepto = descripcion || "Reserva Barber Studio JP";
-  let orden;
-  try {
-    const headers = {
-      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
-      "X-Idempotency-Key": crypto.randomUUID(),
-    };
-    if (deviceId) headers["X-meli-session-id"] = String(deviceId).slice(0, 200);
+const mp = crearClienteMP({ accessToken: MP_ACCESS_TOKEN });
+const huellaDe = (datos) => crypto.createHash("sha256").update(JSON.stringify(datos)).digest("hex");
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// La clave de idempotencia es la del intento del cliente (un intento = un código de Yape); si no la envía, una nueva
+const claveIntento = (intentoId) => (UUID_RE.test(String(intentoId || "")) ? String(intentoId).toLowerCase() : crypto.randomUUID());
 
-    const mpResponse = await fetch("https://api.mercadopago.com/v1/orders", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        type: "online",
-        processing_mode: "automatic",
-        external_reference: referencia,
-        total_amount: importe,
-        description: concepto,
-        items: [{ title: concepto, unit_price: importe, quantity: 1 }],
-        payer: {
-          email,
-          entity_type: "individual",
-          phone: { area_code: "51", number: String(celular).replace(/\D/g, "").slice(-9) },
-        },
-        transactions: {
-          payments: [{ amount: importe, payment_method: { id: "yape", type: "debit_card", token } }],
-        },
-      }),
-    });
-    orden = await mpResponse.json().catch(() => ({}));
-    // En un rechazo los datos de la orden pueden venir dentro de "data"
-    const pago = orden.data && !orden.status ? orden.data : orden;
-    if (!mpResponse.ok && !pago.status) {
-      console.error("❌ Mercado Pago rechazó la solicitud:", JSON.stringify(orden));
-      return { ok: false, status: 402, error: "No se pudo procesar el pago con Yape. Genera un nuevo código e inténtalo otra vez." };
+const repoPagos = crearRepositorioSupabase(supabase);
+const pagos = crearServicioPagos({
+  repo: repoPagos,
+  mp,
+  construirReserva: ({ nombre_cliente, nota_pago, nota_club, ...reserva }, pago) => ({
+    ...reserva,
+    nombre: `${nombre_cliente} (${nota_pago} - Op: ${pago.mp_order_id}${nota_club || ""} - Estado: APPROVED)`,
+    pago_adelanto_id: String(pago.mp_order_id),
+  }),
+  construirSaldo: (pago) => ({
+    saldo_estado: "pagado",
+    saldo_metodo: "yape",
+    saldo_pagado_en: new Date().toISOString(),
+    pago_saldo_id: String(pago.mp_order_id),
+  }),
+  alConfirmar: async ({ pago, reserva }) => {
+    if (pago.tipo === "adelanto") {
+      emitirEvento("reserva", { tipo: "nueva", reserva });
+      await notificarReserva({
+        nombre: pago.reserva_payload.nombre_cliente,
+        celular: reserva.celular,
+        fecha_cita: reserva.fecha_cita,
+        hora_cita: reserva.hora_cita,
+        codigo: reserva.codigo,
+        estado: "approved",
+        servicio: reserva.servicio,
+      });
+    } else {
+      emitirEvento("reserva", { tipo: "saldo_pagado", reserva });
+      await sendSMS(ADMIN_PHONE, `💰 ${String(reserva.nombre).split(" (")[0]} pagó el restante de S/ ${Number(pago.monto).toFixed(2)} con Yape (${reserva.servicio || "servicio"}).`);
     }
-    const detalle = pago.transactions?.payments?.[0]?.status_detail
-      || String(orden?.errors?.[0]?.details?.[0] || "").split(": ")[1]
-      || pago.status_detail;
-    if (pago.status !== "processed" || detalle !== "accredited") {
-      console.warn(`⚠️ Pago Yape no aprobado: ${pago.status} / ${detalle}`);
-      return { ok: false, status: 402, error: MENSAJES_RECHAZO[detalle] || "El pago con Yape fue rechazado. Inténtalo de nuevo." };
-    }
-    return { ok: true, id: pago.id };
-  } catch (err) {
-    console.error("❌ Error de red con Mercado Pago:", err.message);
-    return { ok: false, status: 502, error: "No pudimos comunicarnos con Yape. Inténtalo en unos segundos." };
+  },
+});
+
+// Respuesta HTTP para todo resultado que no sea "confirmado"
+const respuestaNoConfirmada = (r, codigo) => {
+  const op = r.pago?.mp_order_id;
+  switch (r.estado) {
+    case "ocupado":
+      return [409, { error: "Ese horario acaba de ser reservado. Elige otra hora." }];
+    case "clave_reutilizada":
+      return [409, { error: "Este intento de pago ya se usó para otra operación. Recarga la página e inténtalo de nuevo." }];
+    case "en_proceso":
+    case "verificando":
+      return [504, {
+        error: `No pudimos confirmar todavía el estado de tu pago (código ${codigo}). NO vuelvas a pagar: lo verificaremos automáticamente y lo verás en tu perfil, o escríbenos por WhatsApp con ese código.`,
+        codigo,
+      }];
+    case "aprobado_sin_reserva":
+      return [500, {
+        error: `Tu pago fue aprobado (operación ${op}) pero hubo un problema guardando la cita. La registraremos automáticamente; si no la ves en unos minutos, escríbenos por WhatsApp con ese número.`,
+        codigo,
+        payment_id: op,
+      }];
+    case "rechazado":
+      return [402, { error: MENSAJES_RECHAZO[r.pago?.mp_status_detail] || "El pago con Yape fue rechazado. No se realizó ningún cobro.", codigo }];
+    case "liberado":
+      return [409, { error: "Este intento de pago fue anulado. Inténtalo de nuevo con un código nuevo.", codigo }];
+    default:
+      return [402, { error: "No se pudo procesar el pago con Yape. No se realizó ningún cobro. Genera un nuevo código e inténtalo otra vez.", codigo }];
   }
 };
 
@@ -367,16 +395,20 @@ app.get("/fidelidad", async (req, res) => {
 
 // 💜 Nueva reserva: se cobra el adelanto con Yape y solo se guarda si Mercado Pago lo aprueba
 app.post("/reservas/pagar-yape", async (req, res) => {
-  const { nombre, celular, email, fecha_cita, hora_cita, yape_token, celular_yape, servicio_id, device_id } = req.body;
+  const { nombre, celular, email, fecha_cita, hora_cita, yape_token, celular_yape, servicio_id, device_id, intento_id } = req.body;
 
   if (!nombre || !celular || !email || !fecha_cita || !hora_cita || !yape_token || !servicio_id) {
     return res.status(400).json({ error: "⚠️ Faltan datos obligatorios" });
   }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha_cita) || !normalizarHora(hora_cita)) {
+    return res.status(400).json({ error: "Fecha u hora inválida" });
+  }
   const servicio = servicioPorId(servicio_id);
   if (!servicio) return res.status(400).json({ error: "Servicio no válido" });
   if (!MP_ACCESS_TOKEN) return res.status(503).json({ error: "El pago con Yape no está configurado todavía." });
-  if (!(await verificarEsquema())) return res.status(503).json({ error: MENSAJE_SIN_MIGRACION });
+  if (!(await verificarEsquema()) || !(await verificarEsquemaPagos())) return res.status(503).json({ error: MENSAJE_SIN_MIGRACION });
 
+  // Verificación rápida (horario de atención y cruces). La definitiva y atómica la hace iniciar_pago_yape en Supabase.
   try {
     const problema = await validarTurno(fecha_cita, hora_cita, servicio.duracion);
     if (problema) return res.status(409).json({ error: problema });
@@ -399,28 +431,21 @@ app.post("/reservas/pagar-yape", async (req, res) => {
   const descuentoPct = fidelidad?.descuento || 0;
   const { total, adelanto, saldo } = calcularMontos(servicio, descuentoPct);
   const codigo = generarCodigo();
+  const inicio = aMinutos(normalizarHora(hora_cita));
+  const celularPago = celular_yape || celular;
 
-  const cobro = await cobrarYape({
-    monto: adelanto,
-    email,
-    celular: celular_yape || celular,
-    token: yape_token,
-    referencia: codigo,
-    descripcion: `Adelanto ${servicio.nombre} - ${fecha_cita} ${hora_cita}`,
-    deviceId: device_id,
-  });
-  if (!cobro.ok) return res.status(cobro.status).json({ error: cobro.error });
-
-  const estado = "approved";
-  const insertData = {
-    nombre: `${nombre} (YAPE Ref: ${codigo} - Cel: ${celular_yape || celular} - Op: ${cobro.id}${descuentoPct ? ` - CLUB ${fidelidad.nivel.toUpperCase()} ${descuentoPct}% DSCTO` : ""} - Estado: APPROVED)`,
+  // Datos de la cita: se guardan con el intento y la reserva se crea solo cuando el pago está aprobado
+  const payload = {
+    nombre_cliente: nombre,
+    nota_pago: `YAPE Ref: ${codigo} - Cel: ${celularPago}`,
+    nota_club: descuentoPct ? ` - CLUB ${fidelidad.nivel.toUpperCase()} ${descuentoPct}% DSCTO` : "",
     celular,
     email,
     fecha_cita,
     hora_cita,
     fecha_registro: new Date().toISOString(),
     codigo,
-    estado,
+    estado: "approved",
     voucher_url: null,
     servicio_id: servicio.id,
     servicio: servicio.nombre,
@@ -431,35 +456,53 @@ app.post("/reservas/pagar-yape", async (req, res) => {
     adelanto,
     saldo,
     saldo_estado: saldo > 0 ? "pendiente" : "no_aplica",
-    pago_adelanto_id: String(cobro.id),
   };
 
-  const { data, error } = await supabase.from("reservas").insert([insertData]).select().single();
-  if (error) {
-    // El cobro ya se hizo: se registra para conciliarlo manualmente desde Mercado Pago
-    console.error(`❌ PAGO ${cobro.id} APROBADO pero no se guardó la reserva ${codigo}:`, error.message);
-    return res.status(500).json({
-      error: `Tu pago fue aprobado (operación ${cobro.id}) pero hubo un problema guardando la cita. Escríbenos por WhatsApp con ese número.`,
-      codigo,
-      payment_id: cobro.id,
+  let r;
+  try {
+    r = await pagos.cobrar({
+      clave: claveIntento(intento_id),
+      huella: huellaDe({ tipo: "adelanto", email: String(email).toLowerCase(), servicio: servicio.id, fecha_cita, hora_cita, adelanto }),
+      tipo: "adelanto",
+      referencia: codigo,
+      monto: adelanto,
+      fecha: fecha_cita,
+      inicio,
+      fin: inicio + servicio.duracion,
+      payload,
+      cobro: {
+        email,
+        celular: celularPago,
+        token: yape_token,
+        descripcion: `Adelanto ${servicio.nombre} - ${fecha_cita} ${hora_cita}`,
+        deviceId: device_id,
+      },
     });
+  } catch (err) {
+    // Falló el registro del intento: todavía no se llamó a Mercado Pago
+    console.error("❌ No se pudo registrar el intento de pago:", err.message);
+    return res.status(503).json({ error: "No pudimos iniciar el pago. No se realizó ningún cobro; inténtalo en unos segundos." });
   }
 
-  emitirEvento("reserva", { tipo: "nueva", reserva: data });
-  await notificarReserva({ nombre, celular, fecha_cita, hora_cita, codigo, estado, servicio: servicio.nombre });
+  if (r.estado !== "confirmado") {
+    const [status, cuerpo] = respuestaNoConfirmada(r, r.pago?.referencia || codigo);
+    return res.status(status).json(cuerpo);
+  }
 
+  // En un reintento con la misma clave se devuelve la reserva original
+  const datos = r.pago.reserva_payload || payload;
   res.json({
     message: "✅ Pago aprobado y cita registrada",
-    codigo,
-    estado,
-    payment_id: cobro.id,
-    servicio: servicio.nombre,
-    total,
-    adelanto,
-    saldo,
-    descuento_aplicado: descuentoPct,
+    codigo: r.pago.referencia,
+    estado: "approved",
+    payment_id: r.pago.mp_order_id,
+    servicio: datos.servicio,
+    total: Number(datos.total),
+    adelanto: Number(datos.adelanto),
+    saldo: Number(datos.saldo),
+    descuento_aplicado: datos.descuento_pct,
     // Nivel actualizado contando esta reserva
-    fidelidad: fidelidad ? resumenFidelidad(fidelidad.reservas + 1) : null,
+    fidelidad: fidelidad && !r.repetido ? resumenFidelidad(fidelidad.reservas + 1) : null,
   });
 });
 
@@ -467,9 +510,10 @@ app.post("/reservas/pagar-yape", async (req, res) => {
 app.post("/reservas/:id/pagar-saldo", async (req, res) => {
   const user = await obtenerUsuario(req);
   if (!user?.email) return res.status(401).json({ error: "Inicia sesión para pagar" });
-  const { yape_token, celular_yape, device_id } = req.body;
+  const { yape_token, celular_yape, device_id, intento_id } = req.body;
   if (!yape_token || !celular_yape) return res.status(400).json({ error: "⚠️ Faltan los datos de Yape" });
   if (!MP_ACCESS_TOKEN) return res.status(503).json({ error: "El pago con Yape no está configurado todavía." });
+  if (!(await verificarEsquemaPagos())) return res.status(503).json({ error: MENSAJE_SIN_MIGRACION });
 
   const { data: reserva, error } = await supabase.from("reservas").select("*").eq("id", req.params.id).single();
   if (error || !reserva) return res.status(404).json({ error: "Reserva no encontrada" });
@@ -481,38 +525,66 @@ app.post("/reservas/:id/pagar-saldo", async (req, res) => {
     return res.status(409).json({ error: "Esta reserva no tiene saldo pendiente" });
   }
 
-  const cobro = await cobrarYape({
-    monto: Number(reserva.saldo),
-    email: user.email,
-    celular: celular_yape,
-    token: yape_token,
-    referencia: `${reserva.codigo || reserva.id}-SALDO`,
-    descripcion: `Restante ${reserva.servicio || 'servicio'} - ${reserva.fecha_cita}`,
-    deviceId: device_id,
-  });
-  if (!cobro.ok) return res.status(cobro.status).json({ error: cobro.error });
-
-  const { data: actualizada, error: errUpd } = await supabase
-    .from("reservas")
-    .update({
-      saldo_estado: "pagado",
-      saldo_metodo: "yape",
-      saldo_pagado_en: new Date().toISOString(),
-      pago_saldo_id: String(cobro.id),
-    })
-    .eq("id", reserva.id)
-    .select()
-    .single();
-
-  if (errUpd) {
-    console.error(`❌ SALDO ${cobro.id} COBRADO pero no se actualizó la reserva ${reserva.id}:`, errUpd.message);
-    return res.status(500).json({ error: `Tu pago fue aprobado (operación ${cobro.id}). Muéstrale este número al barbero.` });
+  const monto = Number(reserva.saldo);
+  const referencia = `${reserva.codigo || reserva.id}-SALDO-${crypto.randomInt(1000, 10000)}`;
+  let r;
+  try {
+    r = await pagos.cobrar({
+      clave: claveIntento(intento_id),
+      huella: huellaDe({ tipo: "saldo", reserva: String(reserva.id), monto }),
+      tipo: "saldo",
+      referencia,
+      monto,
+      reservaId: reserva.id,
+      cobro: {
+        email: user.email,
+        celular: celular_yape,
+        token: yape_token,
+        descripcion: `Restante ${reserva.servicio || "servicio"} - ${reserva.fecha_cita}`,
+        deviceId: device_id,
+      },
+    });
+  } catch (err) {
+    console.error("❌ No se pudo registrar el intento de pago del saldo:", err.message);
+    return res.status(503).json({ error: "No pudimos iniciar el pago. No se realizó ningún cobro; inténtalo en unos segundos." });
   }
 
-  emitirEvento("reserva", { tipo: "saldo_pagado", reserva: actualizada });
-  await sendSMS(ADMIN_PHONE, `💰 ${String(reserva.nombre).split(" (")[0]} pagó el restante de S/ ${Number(reserva.saldo).toFixed(2)} con Yape (${reserva.servicio || "servicio"}).`);
+  if (r.estado === "ocupado") {
+    return res.status(409).json({ error: "Ya hay un pago del restante en curso o realizado para esta reserva." });
+  }
+  if (r.estado !== "confirmado") {
+    const [status, cuerpo] = respuestaNoConfirmada(r, r.pago?.referencia || referencia);
+    return res.status(status).json(cuerpo);
+  }
 
-  res.json({ message: "✅ Restante pagado", reserva: actualizada, payment_id: cobro.id });
+  const actualizada = r.reserva || (await supabase.from("reservas").select("*").eq("id", reserva.id).single()).data;
+  res.json({ message: "✅ Restante pagado", reserva: actualizada, payment_id: r.pago.mp_order_id });
+});
+
+// 🔔 Webhook de Mercado Pago (tema "order"). Se valida la firma y luego se consulta la orden en la API.
+app.post("/webhooks/mercadopago", async (req, res) => {
+  const tipo = req.query.type || req.body?.type;
+  const orderId = req.query["data.id"] || req.body?.data?.id;
+  if (!MP_WEBHOOK_SECRET) {
+    console.warn("⚠️ Webhook recibido pero falta MP_WEBHOOK_SECRET: se ignora.");
+    return res.sendStatus(503);
+  }
+  const firmaValida = verificarFirmaWebhook({
+    secreto: MP_WEBHOOK_SECRET,
+    xSignature: req.headers["x-signature"],
+    xRequestId: req.headers["x-request-id"],
+    dataId: req.query["data.id"],
+  });
+  if (!firmaValida) {
+    console.warn(JSON.stringify({ nivel: "warn", evento: "webhook_firma_invalida", tipo, order_id: orderId || null }));
+    return res.sendStatus(401);
+  }
+  // Se responde de inmediato (Mercado Pago espera 200 en < 22 s) y se procesa después
+  res.sendStatus(200);
+  if (tipo !== "order" || !orderId || !(await verificarEsquemaPagos())) return;
+  pagos.procesarNotificacionOrden(String(orderId)).catch((err) =>
+    console.error(JSON.stringify({ nivel: "error", evento: "webhook_error", order_id: orderId, error: err.message }))
+  );
 });
 
 // =====================================================================
@@ -631,6 +703,42 @@ app.post("/reservas/:id/estado", requireAdmin, async (req, res) => {
   res.json({ message: `✅ Estado de reserva cambiado a ${estado}`, data });
 });
 
+// 🧾 Intentos de pago con Yape (para soporte de Mercado Pago y conciliación). Sin tokens ni datos del comprador.
+app.get("/admin/pagos", requireAdmin, async (req, res) => {
+  const estados = String(req.query.estado || "").split(",").map((e) => e.trim()).filter(Boolean);
+  try {
+    res.json(await repoPagos.listarPagos({ estados, limite: 200 }));
+  } catch (err) {
+    console.error("❌ Error listando pagos:", err.message);
+    res.status(500).json({ error: "No se pudieron cargar los pagos" });
+  }
+});
+
+// 🔁 Concilia ahora: crea reservas de pagos aprobados y consulta en Mercado Pago los que no tienen estado final
+app.post("/admin/pagos/conciliar", requireAdmin, async (_, res) => {
+  if (!(await verificarEsquemaPagos())) return res.status(503).json({ error: MENSAJE_SIN_MIGRACION });
+  try {
+    res.json({ resultados: await pagos.conciliar() });
+  } catch (err) {
+    console.error("❌ Error conciliando pagos:", err.message);
+    res.status(500).json({ error: "No se pudo conciliar" });
+  }
+});
+
+// 🔓 Libera el horario de un intento sin estado final, después de comprobar en Mercado Pago que NO se cobró
+app.post("/admin/pagos/:id/liberar", requireAdmin, async (req, res) => {
+  const { data, error } = await supabase
+    .from("pagos_yape")
+    .update({ estado: "liberado", updated_at: new Date().toISOString() })
+    .eq("id", req.params.id)
+    .in("estado", ["procesando", "verificando"])
+    .select("id, referencia, estado")
+    .maybeSingle();
+  if (error || !data) return res.status(409).json({ error: "Solo se pueden liberar pagos en estado procesando o verificando" });
+  console.log(JSON.stringify({ nivel: "info", evento: "pago_liberado", referencia: data.referencia, admin: req.user.email }));
+  res.json({ message: "✅ Horario liberado", pago: data });
+});
+
 // 💳 MercadoPago - Crear preferencia de pago (tienda)
 app.post("/crear-preferencia", async (req, res) => {
   const { carrito } = req.body;
@@ -666,3 +774,11 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor backend en ejecución en http://localhost:${PORT}`);
 });
+
+// 🔁 Conciliación automática cada 5 minutos (respaldo si un webhook no llega o la petición se cortó)
+if (MP_ACCESS_TOKEN && SUPABASE_KEY) {
+  setInterval(async () => {
+    if (!(await verificarEsquemaPagos())) return;
+    pagos.conciliar().catch((err) => console.error("❌ Error en la conciliación automática:", err.message));
+  }, 5 * 60 * 1000).unref();
+}

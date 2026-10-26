@@ -5,7 +5,7 @@ import '../styles/CitaServicios.css';
 import { FaCalendarCheck, FaArrowRight, FaArrowLeft, FaCheck, FaUser, FaPhone, FaEnvelope, FaCalendarAlt, FaWhatsapp, FaLock, FaSun, FaCloudSun, FaMoon, FaGift, FaCrown, FaTimes, FaCut, FaHourglassHalf } from 'react-icons/fa';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { API_URL, WHATSAPP_NUMERO, SEDE } from '../config';
-import { generarTokenYape, cargarSeguridadMP, obtenerDeviceId } from '../utils/yape';
+import { generarTokenYape, cargarSeguridadMP, esperarDeviceId, nuevoIntentoId } from '../utils/yape';
 import { cerrarAlTocarFuera } from '../utils/modal';
 import es from 'date-fns/locale/es';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -261,7 +261,9 @@ const Cita = () => {
           celular_yape: celularPago,
           yape_token: yapeTokenId,
           servicio_id: servicioSel.id,
-          device_id: obtenerDeviceId()
+          device_id: await esperarDeviceId(),
+          // Un intento por código de Yape: si la misma petición se repite, el servidor no cobra dos veces
+          intento_id: nuevoIntentoId()
         }),
       });
       resData = await response.json().catch(() => ({}));
@@ -272,9 +274,9 @@ const Cita = () => {
         return;
       }
     } catch (err) {
-      // No se llegó a cobrar: el servidor no respondió
+      // Sin respuesta del servidor: el cobro pudo haberse hecho igual, no se debe pagar de nuevo a ciegas
       console.error(`❌ No se pudo conectar con el backend (${API_URL}):`, err);
-      setError('❌ No pudimos conectar con el servidor de reservas. No se realizó ningún cobro; inténtalo en unos segundos.');
+      setError('❌ Se cortó la conexión con el servidor de reservas. Si Yape te muestra el cobro, NO vuelvas a pagar: revisa tu perfil en unos minutos o escríbenos por WhatsApp.');
       setOtpYape('');
       setLoading(false);
       return;

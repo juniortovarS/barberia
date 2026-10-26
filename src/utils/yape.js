@@ -49,3 +49,23 @@ export const cargarSeguridadMP = () => {
 };
 
 export const obtenerDeviceId = () => window.MP_DEVICE_SESSION_ID || undefined;
+
+// Espera (máx. 4 s) a que security.js entregue el Device ID: Mercado Pago lo pide en cada cobro
+export const esperarDeviceId = async (maxMs = 4000) => {
+  cargarSeguridadMP();
+  const limite = Date.now() + maxMs;
+  while (!window.MP_DEVICE_SESSION_ID && Date.now() < limite) {
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return obtenerDeviceId();
+};
+
+// Identificador del intento de pago (se usa como X-Idempotency-Key en Mercado Pago)
+export const nuevoIntentoId = () => {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  const b = window.crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+};

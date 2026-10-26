@@ -11,7 +11,7 @@ import { NIVELES_FIDELIDAD, useFidelidad, progresoNivel, abrirRegistro, cabecera
 import { soles, fasePorHora } from '../utils/servicios';
 import { API_URL } from '../config';
 import PagoYape from '../components/PagoYape';
-import { obtenerDeviceId } from '../utils/yape';
+import { esperarDeviceId, nuevoIntentoId } from '../utils/yape';
 
 const slug = (t = '') => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -97,7 +97,7 @@ const Perfil = () => {
     const res = await fetch(`${API_URL}/reservas/${reserva.id}/pagar-saldo`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await cabeceraSesion()) },
-      body: JSON.stringify({ yape_token: tokenId, celular_yape: celular, device_id: obtenerDeviceId() }),
+      body: JSON.stringify({ yape_token: tokenId, celular_yape: celular, device_id: await esperarDeviceId(), intento_id: nuevoIntentoId() }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'No se pudo completar el pago.');
