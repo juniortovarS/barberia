@@ -44,7 +44,7 @@ const Section1 = () => {
       </div>
       {/* Texto con aparición progresiva */}
       <div key={index} className="section1-overlay-text">
-        <p className="text-top animate-fade-in-up-1">NUEVO CONCEPTO EN BARBERÍAS</p>
+        <p className="text-top animate-fade-in-up-1">NUEVO  EN BARBERÍAS</p>
         <h1 className="text-main animate-fade-in-up-2">TU ESTILO COMIENZA AQUÍ</h1>
         <p className="text-bottom animate-fade-in-up-3">¡Visítanos en cualquiera de nuestras 5 sedes a nivel nacional!</p>
 
