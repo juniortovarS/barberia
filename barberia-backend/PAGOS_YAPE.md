@@ -148,6 +148,12 @@ devuelve la API. En Lima es 1 hora menos:
 | 26/10 00:06:04 | 186128214154 | S/ 20 | rejected | cc_rejected_high_risk | RES-420058 |
 | 26/10 00:06:38 | 185084617837 | S/ 20 | rejected | cc_rejected_high_risk | RES-849912 |
 
+**Intento con el sistema nuevo (26/10/2026, 13:30 Lima, S/ 10, un solo intento autorizado):**
+orden `ORD01M5WQNNQ3YPFMQDXGM8ZK98GX` (failed), pago `PAY01M5WQNNQBSC9YAA798FRK0HQ9` = ID 185168601271
+(`cc_rejected_high_risk`), referencia RES-316863, `x-request-id` a969ff2a-2231-4535-a829-006b77379a5c. El pagador es el
+mismo titular de la cuenta vendedora. No se creó reserva y el horario quedó libre. En Actividad cada intento aparece en
+**2 filas**: la orden (sin número) y el pago (con número de operación).
+
 `x-request-id` de las consultas: 6d3adef4-d8a3-40de-a904-d8e8f1c3417d (186128214154) y
 4bc77672-e0e6-40d7-91da-d39a144c9967 (185084617837).
 
@@ -205,3 +211,55 @@ registró `failed / high_risk`). Alternativas:
    `Falta ejecutar supabase/migracion_pagos_yape.sql`.
 6. **No hagas pagos reales de prueba** hasta tener la respuesta de soporte. Si autorizas uno, que sea un solo intento.
    Después lee la línea `mp_orden` del log o `GET /admin/pagos` y envía los IDs al caso.
+
+## 6. Yape directo (pago manual verificado por el admin) — modo activo
+
+Mientras Mercado Pago siga rechazando con `high_risk`, la web cobra el adelanto con **Yape directo**.
+Este cobro no pasa por ninguna pasarela y no tiene comisión.
+
+### Flujo
+
+1. **Cliente:** en el paso "Pago" ve el número de Yape (con botón Copiar y QR opcional) y yapea el adelanto.
+2. **Cliente:** sube la captura de la constancia y escribe el Nº de operación.
+3. **Servidor:**
+   - valida la imagen (tipo real, máx. 4 MB) y la guarda en el bucket **privado** `vouchers` de Supabase Storage;
+   - crea la reserva `pending` con `reservar_yape_manual`. Esa función usa el mismo candado por fecha que los cobros con Mercado Pago, así que nadie más puede tomar ese horario.
+4. **Panel admin en vivo, sin F5:**
+   - aparece la tarjeta "Yapes por verificar" con la captura, el monto y el Nº de operación;
+   - suena un aviso y se muestra una notificación;
+   - el título de la pestaña muestra el contador; si el navegador tiene los avisos activados, también llega un aviso del sistema;
+   - además se envía un SMS al admin.
+5. **Admin:** revisa su app de Yape y elige entre dos opciones:
+   - **Llegó · confirmar cita** → la reserva pasa a `approved`. El cliente recibe un SMS y un correo.
+   - **No llegó** → elige un motivo. La reserva pasa a `cancelled` y el horario queda libre.
+6. **Cliente:** su pantalla de confirmación cambia sola (EventSource firmado) a "¡Pago verificado!" o al motivo del rechazo. En su perfil ve "Verificando tu Yape" y la lista se actualiza sola.
+
+### Protecciones
+
+- **Constancias repetidas:** el mismo Nº de operación no puede usarse en dos reservas activas (índice único).
+- **Límites:**
+  - 6 intentos por hora por IP;
+  - 2 reservas pendientes de verificación por correo.
+- **Doble clic o dos dispositivos:** solo se cambia una reserva que sigue `pending`. El segundo clic recibe 409 y el otro panel se actualiza en vivo.
+- **Privacidad de las capturas:**
+  - solo el admin las ve, mediante enlaces firmados de 10 minutos;
+  - el enlace de seguimiento del cliente solo muestra el estado y el motivo, ningún dato personal.
+
+### Despliegue (en este orden)
+
+1. **Supabase → SQL Editor:** ejecutar `supabase/migracion_yape_manual.sql`. Debe aparecer "Success". El bucket `vouchers` lo crea el backend solo.
+2. **Render → barberiaJT → Environment:**
+   - `PAGO_YAPE_MODO=manual`
+   - `YAPE_NUMERO=951038509`
+   - `YAPE_TITULAR=` (el nombre que muestra tu Yape)
+   - `SEGUIMIENTO_SECRET=` (un texto largo aleatorio)
+   - opcional: `YAPE_QR_URL`
+   - de paso, `RESERVA_MONTO=20`
+3. Subir el código (push). Render despliega el backend y la web.
+4. **Prueba:**
+   - hacer una reserva yapeando S/ 20 a tu propio número desde otro celular, o usar una captura cualquiera y luego rechazarla;
+   - comprobar que aparece sola en el panel, aprobar o rechazar, y comprobar que la pantalla del cliente cambia sola.
+
+### Volver a Mercado Pago
+
+Cuando soporte (caso 491197858) levante la restricción, cambiar `PAGO_YAPE_MODO=mercadopago` en Render. No hace falta tocar el código.

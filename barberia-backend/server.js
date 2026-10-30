@@ -6,6 +6,7 @@ const mercadopago = require("mercadopago");
 const { createClient } = require("@supabase/supabase-js");
 const { crearClienteMP, verificarFirmaWebhook } = require("./mercadopago-orders");
 const { crearServicioPagos, crearRepositorioSupabase } = require("./pagos-reserva");
+const yapeManual = require("./yape-manual");
 
 // ✅ Variables de entorno obligatorias (configúralas en Render → Environment)
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
@@ -24,6 +25,14 @@ const CORS_ORIGINS = (process.env.CORS_ORIGINS || "https://barberiajuniortovar.o
   .map((o) => o.trim())
   .filter(Boolean);
 
+// 💜 Cómo paga el cliente el adelanto: "manual" (Yape directo + captura, lo aprueba el admin) o "mercadopago" (código de aprobación)
+const PAGO_YAPE_MODO = process.env.PAGO_YAPE_MODO === "mercadopago" ? "mercadopago" : "manual";
+const YAPE_NUMERO = (process.env.YAPE_NUMERO || ADMIN_PHONE).replace(/\D/g, "").slice(-9);
+const YAPE_TITULAR = process.env.YAPE_TITULAR || "Barber Studio JP";
+const YAPE_QR_URL = process.env.YAPE_QR_URL || null; // imagen pública del QR de Yape (opcional)
+// Firma los enlaces de seguimiento que recibe el cliente (si no se define, se deriva de SUPABASE_KEY)
+const SEGUIMIENTO_SECRET = process.env.SEGUIMIENTO_SECRET || SUPABASE_KEY || "seguimiento-local";
+
 // Monto mínimo que Mercado Pago acepta en un cobro con Yape
 const MINIMO_YAPE = 2;
 
@@ -31,7 +40,11 @@ if (!MP_ACCESS_TOKEN) console.warn("⚠️ Falta MP_ACCESS_TOKEN: los pagos con 
 if (!SUPABASE_KEY) console.warn("⚠️ Falta SUPABASE_KEY: no se podrá guardar en Supabase.");
 
 const app = express();
-app.use(express.json({ limit: "1mb" }));
+app.set("trust proxy", 1); // Render está detrás de un proxy: req.ip debe ser la IP real del cliente
+// La captura del Yape viaja en base64: solo esa ruta acepta cuerpos grandes
+const RUTA_YAPE_MANUAL = "/reservas/yape-manual";
+const jsonNormal = express.json({ limit: "1mb" });
+app.use((req, res, next) => (req.path === RUTA_YAPE_MANUAL ? next() : jsonNormal(req, res, next)));
 app.use(cors({ origin: CORS_ORIGINS }));
 
 // =====================================================================
@@ -120,10 +133,33 @@ const notificarReserva = async ({ nombre, celular, fecha_cita, hora_cita, codigo
 // 🔴 Tiempo real para el panel admin (Server-Sent Events)
 // =====================================================================
 const clientesEnVivo = new Set();
+// Clientes siguiendo su propia reserva (pantalla "verificando tu pago"): código → conexiones
+const seguidores = new Map();
+
+const abrirSSE = (req, res, alCerrar) => {
+  res.set({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  res.flushHeaders();
+  const latido = setInterval(() => res.write(`: latido\n\n`), 25000);
+  req.on("close", () => {
+    clearInterval(latido);
+    alCerrar();
+  });
+};
 
 const emitirEvento = (tipo, datos) => {
   const mensaje = `event: ${tipo}\ndata: ${JSON.stringify(datos)}\n\n`;
   clientesEnVivo.forEach((res) => res.write(mensaje));
+  // El cliente solo recibe el estado de su reserva
+  const codigo = datos?.reserva?.codigo;
+  if (codigo && seguidores.has(codigo)) {
+    const publico = `event: estado\ndata: ${JSON.stringify(yapeManual.estadoPublico(datos.reserva))}\n\n`;
+    seguidores.get(codigo).forEach((res) => res.write(publico));
+  }
 };
 
 // =====================================================================
@@ -254,6 +290,19 @@ const resumenFidelidad = (reservas) => {
   };
 };
 
+// Descuento de fidelidad: solo si la reserva se hace con la cuenta iniciada y su mismo correo
+const fidelidadDeReserva = async (req, email) => {
+  try {
+    const user = await obtenerUsuario(req);
+    if (user?.email && user.email.toLowerCase() === String(email).toLowerCase()) {
+      return resumenFidelidad(await contarReservasAprobadas(user.email));
+    }
+  } catch (err) {
+    console.warn("⚠️ No se pudo calcular la fidelidad:", err.message);
+  }
+  return null;
+};
+
 const contarReservasAprobadas = async (email) => {
   const correos = [...new Set([email, email.toLowerCase()])];
   const { count, error } = await supabase
@@ -352,6 +401,62 @@ const respuestaNoConfirmada = (r, codigo) => {
 };
 
 // =====================================================================
+// 💜 Yape directo: el cliente yapea, sube la captura y el administrador lo verifica
+// =====================================================================
+const repoManual = yapeManual.crearRepositorioYapeManual(supabase);
+const pagosManuales = yapeManual.crearServicioYapeManual({
+  repo: repoManual,
+  emitir: emitirEvento,
+  alRegistrar: async ({ reserva, panelUrl }) => {
+    const cliente = String(reserva.nombre).split(" (")[0];
+    const cita = `${reserva.servicio || "servicio"} - ${reserva.fecha_cita} ${reserva.hora_cita}`;
+    await sendSMS(ADMIN_PHONE, `💜 Nuevo Yape por verificar: S/ ${Number(reserva.adelanto).toFixed(2)} de ${cliente} (Op. ${reserva.yape_operacion}). Cita: ${cita}. Revísalo y apruébalo aquí: ${panelUrl}`);
+    await sendSMS(formatPeruNumber(reserva.celular), `Barber Studio JP: Recibimos tu Yape para ${cita}. Tu horario está separado; te confirmamos en minutos. Código: ${reserva.codigo}.`);
+  },
+  alVerificar: async ({ reserva, decision }) => {
+    const cita = `${reserva.servicio || "tu cita"} del ${reserva.fecha_cita} a las ${reserva.hora_cita}`;
+    const texto = decision === "aprobar"
+      ? `Barber Studio JP: ¡Recibimos tu Yape! Tu cita (${cita}) está CONFIRMADA. Código: ${reserva.codigo}.`
+      : `Barber Studio JP: No pudimos validar tu Yape para ${cita}. ${reserva.pago_motivo_rechazo || ""} Escríbenos por WhatsApp al ${YAPE_NUMERO}. Código: ${reserva.codigo}.`;
+    await sendSMS(formatPeruNumber(reserva.celular), texto);
+  },
+});
+
+// Yape directo necesita supabase/migracion_yape_manual.sql y el bucket privado de comprobantes
+let manualListo = false;
+const verificarEsquemaManual = async () => {
+  if (manualListo) return true;
+  const { error } = await supabase.from("reservas").select("pago_metodo, yape_operacion, pago_motivo_rechazo").limit(1);
+  if (error) {
+    console.warn("⚠️ Falta ejecutar supabase/migracion_yape_manual.sql en Supabase:", error.message);
+    return false;
+  }
+  try {
+    await repoManual.asegurarBucket();
+    manualListo = true;
+  } catch (err) {
+    console.warn("⚠️ No se pudo preparar el bucket de comprobantes:", err.message);
+  }
+  return manualListo;
+};
+if (SUPABASE_KEY && PAGO_YAPE_MODO === "manual") verificarEsquemaManual();
+
+// Enlace al panel para el SMS del admin: la web desde donde se reservó (localhost en pruebas, el dominio real en producción).
+// Solo se usan orígenes permitidos en CORS_ORIGINS; PANEL_URL lo fija a mano si hace falta.
+const urlPanel = (req) => {
+  if (process.env.PANEL_URL) return process.env.PANEL_URL;
+  const origen = req.headers.origin;
+  return `${CORS_ORIGINS.includes(origen) ? origen : CORS_ORIGINS[0]}/admin`;
+};
+
+// Evita que alguien llene la agenda con comprobantes falsos
+// LIMITES_RESERVA=off los desactiva (solo para pruebas locales; en producción deben quedar activos)
+const LIMITES_ACTIVOS = process.env.LIMITES_RESERVA !== "off";
+if (!LIMITES_ACTIVOS) console.warn("⚠️ LIMITES_RESERVA=off: sin límite de intentos ni de reservas pendientes (solo para pruebas).");
+const limiteManualPorIp = yapeManual.crearLimitador({ maximo: 6, ventanaMs: 60 * 60 * 1000 });
+const MAX_PENDIENTES_POR_CLIENTE = 2;
+
+// =====================================================================
 // 🌐 Rutas públicas
 // =====================================================================
 app.get("/test", (_, res) => {
@@ -360,7 +465,13 @@ app.get("/test", (_, res) => {
 
 // ⚙️ Configuración pública para el frontend
 app.get("/config-pago", (_, res) => {
-  res.json({ monto: RESERVA_MONTO, moneda: "PEN", niveles: NIVELES_FIDELIDAD, servicios: SERVICIOS });
+  res.json({
+    monto: RESERVA_MONTO,
+    moneda: "PEN",
+    niveles: NIVELES_FIDELIDAD,
+    servicios: SERVICIOS,
+    yape: { modo: PAGO_YAPE_MODO, numero: YAPE_NUMERO, titular: YAPE_TITULAR, qr: YAPE_QR_URL },
+  });
 });
 
 app.get("/servicios", (_, res) => res.json(SERVICIOS));
@@ -417,17 +528,7 @@ app.post("/reservas/pagar-yape", async (req, res) => {
     return res.status(500).json({ error: "No se pudo verificar la disponibilidad" });
   }
 
-  // Descuento de fidelidad: solo si la reserva se hace con la cuenta iniciada y su mismo correo
-  let fidelidad = null;
-  try {
-    const user = await obtenerUsuario(req);
-    if (user?.email && user.email.toLowerCase() === String(email).toLowerCase()) {
-      fidelidad = resumenFidelidad(await contarReservasAprobadas(user.email));
-    }
-  } catch (err) {
-    console.warn("⚠️ No se pudo calcular la fidelidad:", err.message);
-  }
-
+  const fidelidad = await fidelidadDeReserva(req, email);
   const descuentoPct = fidelidad?.descuento || 0;
   const { total, adelanto, saldo } = calcularMontos(servicio, descuentoPct);
   const codigo = generarCodigo();
@@ -504,6 +605,125 @@ app.post("/reservas/pagar-yape", async (req, res) => {
     // Nivel actualizado contando esta reserva
     fidelidad: fidelidad && !r.repetido ? resumenFidelidad(fidelidad.reservas + 1) : null,
   });
+});
+
+// 💜 Nueva reserva con Yape directo: el cliente ya yapeó y sube la captura. Queda "pending" hasta que el admin verifica.
+app.post(RUTA_YAPE_MANUAL, express.json({ limit: "7mb" }), async (req, res) => {
+  const { nombre, celular, email, fecha_cita, hora_cita, servicio_id, operacion, comprobante } = req.body || {};
+
+  if (!nombre || !celular || !email || !fecha_cita || !hora_cita || !servicio_id) {
+    return res.status(400).json({ error: "⚠️ Faltan datos obligatorios" });
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha_cita) || !normalizarHora(hora_cita)) {
+    return res.status(400).json({ error: "Fecha u hora inválida" });
+  }
+  const servicio = servicioPorId(servicio_id);
+  if (!servicio) return res.status(400).json({ error: "Servicio no válido" });
+  const numeroOperacion = yapeManual.normalizarOperacion(operacion);
+  if (!numeroOperacion) {
+    return res.status(400).json({ error: "Escribe el Nº de operación que aparece en tu constancia de Yape." });
+  }
+  const archivo = yapeManual.decodificarComprobante(comprobante);
+  if (archivo.error) return res.status(400).json({ error: archivo.error });
+
+  if (LIMITES_ACTIVOS && !limiteManualPorIp(req.ip)) {
+    return res.status(429).json({ error: "Demasiados intentos seguidos. Escríbenos por WhatsApp y te ayudamos." });
+  }
+  if (!(await verificarEsquema()) || !(await verificarEsquemaManual())) {
+    return res.status(503).json({ error: MENSAJE_SIN_MIGRACION });
+  }
+
+  try {
+    const problema = await validarTurno(fecha_cita, hora_cita, servicio.duracion);
+    if (problema) return res.status(409).json({ error: problema });
+    if (LIMITES_ACTIVOS && (await repoManual.contarPendientes(email)) >= MAX_PENDIENTES_POR_CLIENTE) {
+      return res.status(409).json({ error: "Ya tienes reservas esperando la verificación de tu Yape. Espera la confirmación o escríbenos por WhatsApp." });
+    }
+  } catch (err) {
+    console.error("❌ Error verificando disponibilidad:", err.message);
+    return res.status(500).json({ error: "No se pudo verificar la disponibilidad" });
+  }
+
+  const fidelidad = await fidelidadDeReserva(req, email);
+  const descuentoPct = fidelidad?.descuento || 0;
+  const { total, adelanto, saldo } = calcularMontos(servicio, descuentoPct);
+  const codigo = generarCodigo();
+  const inicio = aMinutos(normalizarHora(hora_cita));
+  const notaClub = descuentoPct ? ` - CLUB ${fidelidad.nivel.toUpperCase()} ${descuentoPct}% DSCTO` : "";
+
+  let r;
+  try {
+    r = await pagosManuales.registrarPago({
+      reserva: {
+        nombre: `${nombre} (YAPE DIRECTO Op: ${numeroOperacion}${notaClub} - Estado: PENDING)`,
+        celular,
+        email,
+        fecha_cita,
+        hora_cita,
+        fecha_registro: new Date().toISOString(),
+        codigo,
+        estado: "pending",
+        servicio_id: servicio.id,
+        servicio: servicio.nombre,
+        duracion_min: servicio.duracion,
+        precio: servicio.precio,
+        descuento_pct: descuentoPct,
+        total,
+        adelanto,
+        saldo,
+        saldo_estado: saldo > 0 ? "pendiente" : "no_aplica",
+        pago_metodo: "yape_manual",
+        yape_operacion: numeroOperacion,
+      },
+      inicio,
+      fin: inicio + servicio.duracion,
+      comprobante: archivo,
+      panelUrl: urlPanel(req),
+    });
+  } catch (err) {
+    console.error(JSON.stringify({ nivel: "error", evento: "yape_manual_error", codigo, error: err.message }));
+    return res.status(503).json({ error: "No pudimos registrar tu reserva. Inténtalo de nuevo en unos segundos; si ya yapeaste, escríbenos por WhatsApp." });
+  }
+
+  if (r.estado === "ocupado") return res.status(409).json({ error: "Ese horario acaba de ser reservado. Elige otra hora." });
+  if (r.estado === "operacion_repetida") {
+    return res.status(409).json({ error: "Ese Nº de operación ya se usó en otra reserva. Revisa tu constancia de Yape." });
+  }
+
+  res.status(201).json({
+    message: "✅ Reserva recibida. Estamos verificando tu Yape.",
+    codigo,
+    estado: "pending",
+    seguimiento: yapeManual.tokenSeguimiento(SEGUIMIENTO_SECRET, codigo),
+    servicio: servicio.nombre,
+    total,
+    adelanto,
+    saldo,
+    descuento_aplicado: descuentoPct,
+  });
+});
+
+// 🔴 El cliente sigue en vivo la verificación de su pago (EventSource, sin sesión: lo protege el token firmado)
+app.get("/reservas/:codigo/seguimiento", async (req, res) => {
+  const { codigo } = req.params;
+  if (!yapeManual.tokenValido(SEGUIMIENTO_SECRET, codigo, req.query.t)) return res.sendStatus(404);
+  let reserva;
+  try {
+    reserva = await repoManual.obtenerPorCodigo(codigo);
+  } catch (err) {
+    return res.sendStatus(503);
+  }
+  if (!reserva) return res.sendStatus(404);
+
+  const conexiones = seguidores.get(codigo) || new Set();
+  seguidores.set(codigo, conexiones);
+  abrirSSE(req, res, () => {
+    conexiones.delete(res);
+    if (!conexiones.size) seguidores.delete(codigo);
+  });
+  // Estado actual al conectar (cubre lo que pasó mientras estaba desconectado)
+  res.write(`retry: 3000\nevent: estado\ndata: ${JSON.stringify(yapeManual.estadoPublico(reserva))}\n\n`);
+  conexiones.add(res);
 });
 
 // 💜 Pago del restante con Yape (lo hace el cliente desde su perfil cuando empieza su cita)
@@ -593,20 +813,40 @@ app.post("/webhooks/mercadopago", async (req, res) => {
 
 // 🔴 Eventos en vivo del panel (pagos y reservas nuevas) — se leen con fetch + Authorization
 app.get("/admin/eventos", requireAdmin, (req, res) => {
-  res.set({
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache, no-transform",
-    Connection: "keep-alive",
-    "X-Accel-Buffering": "no",
-  });
-  res.flushHeaders();
+  abrirSSE(req, res, () => clientesEnVivo.delete(res));
   res.write(`event: conectado\ndata: {}\n\n`);
   clientesEnVivo.add(res);
-  const latido = setInterval(() => res.write(`: latido\n\n`), 25000);
-  req.on("close", () => {
-    clearInterval(latido);
-    clientesEnVivo.delete(res);
-  });
+});
+
+// 🧾 Captura del Yape (enlace temporal de 10 minutos; el bucket es privado)
+app.get("/admin/reservas/:id/comprobante", requireAdmin, async (req, res) => {
+  try {
+    const reserva = await repoManual.obtenerReserva(req.params.id);
+    if (!reserva?.voucher_url) return res.status(404).json({ error: "Esta reserva no tiene comprobante" });
+    if (/^https?:\/\//.test(reserva.voucher_url)) return res.json({ url: reserva.voucher_url });
+    res.json({ url: await repoManual.urlComprobante(reserva.voucher_url) });
+  } catch (err) {
+    console.error("❌ Error obteniendo comprobante:", err.message);
+    res.status(500).json({ error: "No se pudo abrir el comprobante" });
+  }
+});
+
+// ✅/❌ Verificar un Yape directo: aprueba la cita o la cancela con un motivo (libera el horario)
+app.post("/admin/reservas/:id/verificar-pago", requireAdmin, async (req, res) => {
+  const { decision, motivo } = req.body || {};
+  if (!(await verificarEsquemaManual())) return res.status(503).json({ error: MENSAJE_SIN_MIGRACION });
+  try {
+    const r = await pagosManuales.verificarPago({ id: req.params.id, decision, motivo, admin: req.user.email });
+    if (r.estado === "invalido") return res.status(400).json({ error: "Decisión inválida" });
+    if (r.estado === "no_encontrada") return res.status(404).json({ error: "Reserva no encontrada" });
+    if (r.estado === "ya_revisada") {
+      return res.status(409).json({ error: "Este pago ya fue revisado (quizá desde otro dispositivo).", reserva: r.reserva });
+    }
+    res.json({ message: r.estado === "aprobada" ? "✅ Pago verificado, cita confirmada" : "Pago rechazado, horario liberado", reserva: r.reserva });
+  } catch (err) {
+    console.error("❌ Error verificando pago:", err.message);
+    res.status(500).json({ error: "No se pudo guardar la verificación" });
+  }
 });
 
 // 💵 El cliente pagó el restante en efectivo / Yape directo en el local

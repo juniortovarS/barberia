@@ -607,7 +607,225 @@
 
 .ad-aviso.ok { background: #0f2417; border-color: rgba(74, 222, 128, 0.5); color: #bbf7d0; }
 
+.ad-aviso.yape { background: #24102b; border-color: rgba(214, 139, 242, 0.6); color: #f3d9fb; }
+.ad-aviso.error { background: #2a1111; border-color: rgba(248, 113, 113, 0.5); color: #fecaca; }
+
 @keyframes adAviso { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+/* ---------- Alarma de nueva reserva ---------- */
+.ad-alarma {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1700;
+  width: min(620px, calc(100vw - 28px));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(214, 139, 242, 0.8);
+  background: linear-gradient(135deg, #3b1347, #1d0a24);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 0 rgba(214, 139, 242, 0.6);
+  animation: adAlarmaEntra 0.35s cubic-bezier(0.16, 1, 0.3, 1), adAlarmaPulso 1.4s ease-in-out infinite;
+}
+
+.ad-alarma-icono {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+  color: #1d0a24 !important;
+  background: #d68bf2;
+  animation: adCampana 0.9s ease-in-out infinite;
+}
+
+.ad-alarma-texto { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.ad-alarma-texto strong { color: #ffffff; font-size: 1rem; }
+.ad-alarma-texto small { color: #e9c9f5 !important; font-size: 0.76rem; line-height: 1.4; }
+
+@keyframes adAlarmaEntra { from { opacity: 0; transform: translate(-50%, -16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes adAlarmaPulso {
+  0%, 100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 0 rgba(214, 139, 242, 0.55); }
+  50% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 10px rgba(214, 139, 242, 0); }
+}
+@keyframes adCampana {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(4deg); }
+}
+
+.ad-btn.ad-alarma-pendiente { background: #742582; border-color: #d68bf2; color: #ffffff; animation: adAlarmaPulso 1.6s ease-in-out infinite; }
+
+.ad-alarma-desbloquear {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px dashed rgba(214, 139, 242, 0.6);
+  background: rgba(116, 37, 130, 0.18);
+  color: #f3d9fb;
+  font: 600 0.85rem var(--font-body);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-alarma, .ad-alarma-icono, .ad-btn.ad-alarma-pendiente { animation: none; }
+}
+
+/* ---------- Yapes por verificar ---------- */
+.ad-chip.yape { color: #f3d9fb !important; background: rgba(116, 37, 130, 0.45); }
+.ad-titulo.yape { color: #d68bf2; }
+.ad-titulo .ad-badge { background: #742582; }
+
+.ad-verif-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr));
+  gap: 12px;
+}
+
+.ad-verif {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 16px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(214, 139, 242, 0.4);
+  background: linear-gradient(160deg, rgba(116, 37, 130, 0.22), rgba(116, 37, 130, 0.04));
+  animation: adVerifEntra 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes adVerifEntra {
+  0% { opacity: 0; transform: translateY(10px); box-shadow: 0 0 0 0 rgba(214, 139, 242, 0.55); }
+  60% { opacity: 1; transform: none; box-shadow: 0 0 0 8px rgba(214, 139, 242, 0); }
+  100% { box-shadow: none; }
+}
+
+.ad-verif-foto {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 176px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.4);
+  color: #8a8a8a;
+  font-size: 0.75rem;
+  cursor: zoom-in;
+}
+
+.ad-verif-foto:disabled { cursor: default; }
+.ad-verif-foto img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+
+.ad-verif-foto small {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #ffffff !important;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+}
+
+.ad-verif-info { display: flex; flex-direction: column; min-width: 0; }
+
+.ad-verif-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ad-verif-top strong { color: #ffffff; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-verif-tiempo { flex-shrink: 0; font-size: 0.72rem; color: #d68bf2 !important; font-weight: 600; }
+
+.ad-verif-monto { font-size: 1.6rem; font-weight: 700; color: #ffffff; line-height: 1.2; margin: 2px 0 6px; font-variant-numeric: tabular-nums; }
+
+.ad-verif-datos { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; font-size: 0.8rem; }
+.ad-verif-datos li { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.ad-verif-datos svg { flex-shrink: 0; color: #8a8a8a; font-size: 0.75rem; }
+
+.ad-verif-datos code {
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ad-verif-ayuda { margin: 0 0 12px; font-size: 0.74rem; line-height: 1.45; color: #8a8a8a !important; }
+.ad-verif-ayuda b { color: #e5e5e5; }
+
+.ad-verif-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.ad-verif-acciones .ad-btn { flex: 1 1 auto; justify-content: center; }
+
+.ad-verif-rechazo { display: grid; gap: 10px; margin-top: auto; }
+.ad-verif-rechazo label { display: grid; gap: 6px; font-size: 0.74rem; color: #9a9a9a; }
+
+.ad-verif-rechazo select,
+.ad-rechazo-linea select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #111113;
+  color: #ffffff;
+  font: 0.85rem var(--font-body);
+}
+
+.ad-rechazo-linea { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+
+.ad-montos .pendiente b { color: #d68bf2; }
+.ad-montos .pendiente span { color: #d68bf2 !important; }
+
+.ad-contacto-dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  background: rgba(116, 37, 130, 0.25);
+  color: #f3d9fb !important;
+}
+
+.ad-comprobante {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-height: 260px;
+  min-height: 90px;
+  margin-bottom: 14px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  color: #8a8a8a;
+  font-size: 0.8rem;
+  cursor: zoom-in;
+}
+
+.ad-comprobante img { width: 100%; max-height: 260px; object-fit: cover; object-position: top; }
+.ad-comprobante small { position: absolute; bottom: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(0, 0, 0, 0.75); color: #ffffff !important; font-size: 0.74rem; }
+
+.ad-visor { z-index: 1600; }
+.ad-visor img { max-width: min(96vw, 560px); max-height: 92vh; border-radius: 14px; box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8); }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
@@ -630,4 +848,42 @@
   .ad-modal-fondo { align-items: flex-end; padding: 0; }
   .ad-modal { border-radius: 22px 22px 0 0; max-width: none; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   .ad-avisos { left: 14px; right: 14px; bottom: 14px; max-width: none; }
+  .ad-verif { grid-template-columns: 92px 1fr; gap: 12px; padding: 12px; }
+  .ad-verif-foto { height: 150px; }
+  .ad-visor { align-items: center; padding: 14px; }
 }
+
+/* ---------- Selector de voz de la alarma ---------- */
+.ad-voz {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d68bf2;
+}
+
+.ad-voz select {
+  max-width: 190px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #e5e5e5;
+  font: 600 0.8rem var(--font-body);
+  cursor: pointer;
+}
+
+.ad-voz select option { background: #141416; color: #ffffff; }
+
+@media (max-width: 600px) {
+  .ad-cabecera-acciones { flex-wrap: wrap; }
+  .ad-voz select { max-width: 150px; }
+}
+
+/* Popup de recordatorio (no se aceptó ni rechazó a tiempo) */
+.ad-alarma.recordatorio { border-color: rgba(251, 191, 36, 0.85); background: linear-gradient(135deg, #3a2a08, #1c1404); }
+.ad-alarma.recordatorio .ad-alarma-icono { background: #fbbf24; }
+.ad-alarma.recordatorio .ad-alarma-texto small { color: #fde68a !important; }

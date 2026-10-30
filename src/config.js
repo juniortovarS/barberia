@@ -15,3 +15,13 @@ export const SEDE = {
   direccion: 'Sede La Molina',
   mapa: 'https://maps.app.goo.gl/emojVJ8G5VQF4LsQ8',
 };
+
+// Enlace de WhatsApp con mensaje. Se usa api.whatsapp.com/send y no wa.me: la redirección de wa.me
+// rompe los emojis en WhatsApp de PC (aparecen como "�").
+export const enlaceWhatsApp = (numero, texto = '') =>
+  `https://api.whatsapp.com/send?phone=${numero}${texto ? `&text=${encodeURIComponent(texto)}` : ''}`;
+
+// Dirección pública de la web: a ella apuntan los enlaces de los correos de Supabase (recuperar contraseña,
+// confirmar cuenta). Aunque se pidan desde localhost, el cliente siempre llega a la web real.
+// Para probar ese flujo en tu PC, pon REACT_APP_SITE_URL=http://localhost:3000 en .env.local.
+export const SITIO_URL = (process.env.REACT_APP_SITE_URL || 'https://barberiajuniortovar.onrender.com').replace(/\/$/, '');

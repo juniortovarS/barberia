@@ -4,16 +4,19 @@ import '../styles/CitaPro.css';
 import '../styles/CitaServicios.css';
 import { FaCalendarCheck, FaArrowRight, FaArrowLeft, FaCheck, FaUser, FaPhone, FaEnvelope, FaCalendarAlt, FaWhatsapp, FaLock, FaSun, FaCloudSun, FaMoon, FaGift, FaCrown, FaTimes, FaCut, FaHourglassHalf } from 'react-icons/fa';
 import DatePicker, { registerLocale } from 'react-datepicker';
-import { API_URL, WHATSAPP_NUMERO, SEDE } from '../config';
+import { API_URL, WHATSAPP_NUMERO, SEDE, enlaceWhatsApp } from '../config';
 import { generarTokenYape, cargarSeguridadMP, esperarDeviceId, nuevoIntentoId } from '../utils/yape';
 import { cerrarAlTocarFuera } from '../utils/modal';
 import es from 'date-fns/locale/es';
 import 'react-datepicker/dist/react-datepicker.css';
-import emailjs from '@emailjs/browser';
+import { enviarCorreoAdmin, enviarCorreoClienteConfirmada } from '../utils/correos';
 import { useAuth } from '../components/AuthContext';
 import { turnosDelDia, estaAbierto, fechaISO, DIAS_MAXIMOS_RESERVA } from '../utils/horario';
 import { useFidelidad, cabeceraSesion, abrirRegistro, progresoNivel, NIVELES_FIDELIDAD } from '../utils/fidelidad';
 import { SERVICIOS, duracionTexto, soles, calcularMontos } from '../utils/servicios';
+import PagoYapeManual from '../components/PagoYapeManual';
+import { useSeguimientoReserva } from '../utils/yapeManual';
+import '../styles/PagoYapeManual.css';
 
 // Turnos del día para el selector de hora
 const TURNOS = [
@@ -64,6 +67,15 @@ const Cita = () => {
   const [montoReserva, setMontoReserva] = useState(20);
   const [codigoConfirmado, setCodigoConfirmado] = useState('');
 
+  // Yape directo (el cliente yapea, sube la captura y el admin verifica) o código de aprobación (Mercado Pago)
+  const [yapeCfg, setYapeCfg] = useState({ modo: 'manual', numero: WHATSAPP_NUMERO.slice(-9), titular: SEDE.nombre, qr: null });
+  const esManual = yapeCfg.modo !== 'mercadopago';
+  const [comprobante, setComprobante] = useState('');
+  const [operacion, setOperacion] = useState('');
+  const [seguimiento, setSeguimiento] = useState(null); // { codigo, token } de la reserva en verificación
+  const verificacion = useSeguimientoReserva(seguimiento?.codigo, seguimiento?.token);
+  const estadoVerificacion = seguimiento ? (verificacion.estado || 'pending') : null;
+
   // Disponibilidad de horarios del día elegido
   const [bloques, setBloques] = useState([]);
   const [cargandoHoras, setCargandoHoras] = useState(false);
@@ -86,6 +98,7 @@ const Cita = () => {
         if (cfg?.monto) setMontoReserva(cfg.monto);
         if (Array.isArray(cfg?.niveles)) setNivelesClub(cfg.niveles);
         if (Array.isArray(cfg?.servicios) && cfg.servicios.length) setServicios(cfg.servicios);
+        if (cfg?.yape?.numero) setYapeCfg(cfg.yape);
       })
       .catch(() => {});
   }, []);
@@ -208,12 +221,62 @@ const Cita = () => {
     setPaso(prev => Math.max(0, prev - 1));
   };
 
+  // Yape directo: envía la captura + Nº de operación. La cita queda "pendiente" hasta que el admin verifica.
+  const enviarYapeManual = async (fecha, hora) => {
+    try {
+      const response = await fetch(`${API_URL}/reservas/yape-manual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await cabeceraSesion()) },
+        body: JSON.stringify({
+          nombre,
+          celular,
+          email,
+          fecha_cita: fecha,
+          hora_cita: hora,
+          servicio_id: servicioSel.id,
+          operacion,
+          comprobante,
+        }),
+      });
+      const resData = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(`❌ ${resData.error || 'No se pudo registrar tu reserva.'}`);
+        return null;
+      }
+      return resData;
+    } catch (err) {
+      console.error(`❌ No se pudo conectar con el backend (${API_URL}):`, err);
+      setError('❌ Se cortó la conexión. Revisa tu internet e inténtalo de nuevo; tu Yape no se pierde, usa la misma captura.');
+      return null;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
     if (!nombre || !celular || !email || !fechaSeleccionada || !horaSeleccionada) {
       setError("⚠️ Datos incompletos. Por favor revisa todos los pasos.");
+      return;
+    }
+
+    if (esManual) {
+      if (!comprobante) {
+        setError('⚠️ Sube la captura de tu Yape.');
+        return;
+      }
+      if (operacion.length < 4) {
+        setError('⚠️ Escribe el Nº de operación que aparece en tu constancia de Yape.');
+        return;
+      }
+      setLoading(true);
+      const resData = await enviarYapeManual(fechaISO(fechaSeleccionada), horaSeleccionada);
+      if (!resData) {
+        setLoading(false);
+        return;
+      }
+      setSeguimiento({ codigo: resData.codigo, token: resData.seguimiento });
+      await finalizarReserva(resData, { metodoPago: 'yape directo', referenciaPago: `Op. ${operacion}`, estadoReserva: 'pending' });
       return;
     }
 
@@ -282,230 +345,82 @@ const Cita = () => {
       return;
     }
 
+    await finalizarReserva(resData, { metodoPago: 'yape', referenciaPago: celularPago, estadoReserva: 'approved' });
+  };
+
+  // Correos, Google Sheets y pantalla de confirmación (común a los dos métodos de pago)
+  const finalizarReserva = async (resData, { metodoPago, referenciaPago, estadoReserva }) => {
+    const fecha = fechaISO(fechaSeleccionada);
+    const hora = horaSeleccionada;
     const codigoReserva = resData.codigo;
-    const estadoReserva = 'approved';
-    const metodoPago = 'yape';
+    const pendiente = estadoReserva === 'pending';
     setCodigoConfirmado(codigoReserva);
     setDescuentoAplicado(resData.descuento_aplicado || 0);
     setPagoConfirmado({ total: resData.total, adelanto: resData.adelanto, saldo: resData.saldo });
     if (resData.fidelidad) setFidelidad({ ...resData.fidelidad, niveles: nivelesClub });
     const notaClub = resData.descuento_aplicado ? ` - CLUB ${resData.descuento_aplicado}% DSCTO` : '';
 
-
-    // Nombre con los datos de pago integrados de forma limpia para Supabase y Twilio
-    const nombreCompletoConPago = `${nombre} (${metodoPago.toUpperCase()} Ref: ${codigoReserva} - Cel: ${celularPago}${notaClub} - Estado: ${estadoReserva.toUpperCase()})`;
-
-    const baseMessageText = `
-========================================
-            BARBERÍA PRO
-========================================
-Hola ${nombre},
-
-Tu reserva ha sido registrada de manera exitosa.
-
-DETALLES DE LA CITA:
-Servicio:     ${servicioSel.nombre} (${duracionTexto(servicioSel.duracion)})
-Total:        ${soles(resData.total)}
-Adelanto:     ${soles(resData.adelanto)} (pagado)
-Restante:     ${soles(resData.saldo)} (el día de tu cita)
-----------------------------------------
-Cliente:      ${nombre}
-Teléfono:     ${celular}
-Correo:       ${email}
-Fecha:        ${fecha}
-Hora:         ${hora}
-Código:       ${codigoReserva}
-Método Pago:  ${metodoPago.toUpperCase()} (Ref: ${celularPago})
-Estado:       ${estadoReserva.toUpperCase()}
-----------------------------------------
-
-¡Gracias por elegirnos!
-========================================
-`;
-
-    const baseMessageHtml = `
-<div style="font-family: 'Courier New', Courier, monospace; background-color: #000000; color: #ffffff; padding: 40px 20px; text-align: center;">
-  <div style="max-width: 500px; margin: 0 auto; background-color: #000000; border: 1px solid #333333; padding: 30px; text-align: left; box-sizing: border-box;">
-    
-    <div style="text-align: center; border-bottom: 1px solid #333333; padding-bottom: 20px; margin-bottom: 25px;">
-      <h1 style="font-size: 22px; font-weight: bold; letter-spacing: 4px; margin: 0; text-transform: uppercase; color: #ffffff;">BARBERÍA PRO</h1>
-      <p style="font-size: 11px; color: #888888; margin: 5px 0 0 0; letter-spacing: 2px;">ESTILO & ELEGANCIA MASCULINA</p>
-    </div>
-
-    <p style="font-size: 14px; line-height: 1.6; color: #dddddd; margin-bottom: 25px;">
-      Hola, <strong>${nombre}</strong>.<br />
-      Se ha agendado tu reserva con éxito en nuestro sistema. A continuación los detalles de la cita:
-    </p>
-
-    <div style="background-color: #111111; border: 1px dashed #444444; padding: 20px; margin-bottom: 25px; font-size: 13px; line-height: 1.8;">
-      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
-        <span style="color: #888888;">Cliente:</span> 
-        <strong style="float: right; color: #ffffff;">${nombre}</strong>
-      </div>
-      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
-        <span style="color: #888888;">Celular:</span> 
-        <strong style="float: right; color: #ffffff;">${celular}</strong>
-      </div>
-      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
-        <span style="color: #888888;">Correo:</span> 
-        <strong style="float: right; color: #ffffff; text-transform: none;">${email}</strong>
-      </div>
-      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
-        <span style="color: #888888;">Fecha Cita:</span> 
-        <strong style="float: right; color: #ffffff;">${fecha}</strong>
-      </div>
-      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
-        <span style="color: #888888;">Hora Cita:</span> 
-        <strong style="float: right; color: #ffffff;">${hora}</strong>
-      </div>
-      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
-        <span style="color: #888888;">Código Único:</span> 
-        <strong style="float: right; color: #ffd700; font-family: monospace;">${codigoReserva}</strong>
-      </div>
-      <div style="border-bottom: 1px solid #222222; padding-bottom: 6px; margin-bottom: 6px;">
-        <span style="color: #888888;">Método de Pago:</span> 
-        <strong style="float: right; color: #ffffff;">${metodoPago.toUpperCase()} (${celularPago})</strong>
-      </div>
-      <div style="padding-top: 4px;">
-        <span style="color: #888888;">Estado Pago:</span> 
-        <strong style="float: right; color: #00e676; text-transform: uppercase;">${estadoReserva.toUpperCase()}</strong>
-      </div>
-    </div>
-
-    <p style="font-size: 12px; line-height: 1.6; color: #888888; margin-bottom: 0; text-align: center;">
-      Si deseas realizar algún cambio o cancelar la cita, puedes hacerlo directamente desde el menú "Mi Cuenta" en nuestra web.<br /><br />
-      <span style="color: #555555;">© 2026 Barbería Pro. Todos los derechos reservados.</span>
-    </p>
-
-  </div>
-</div>
-`;
-
-    const adminParams = {
-      asunto: "NUEVA RESERVA - BARBERÍA PRO",
-      subject: "NUEVA RESERVA - BARBERÍA PRO",
-      nombre: nombreCompletoConPago,
-      cliente: nombre,
-      user_name: nombre,
-      name: nombre,
-      
-      celular: celular,
-      user_phone: celular,
-      phone: celular,
-      telefono: celular,
-      
-      email: email,
-      user_email: email,
-      correo: email,
-      
-      fecha: fecha,
-      hora: hora,
+    const cita = {
+      nombre,
+      celular,
+      email,
+      servicio: servicioSel.nombre,
+      duracion: servicioSel.duracion,
+      fecha,
+      hora,
       codigo: codigoReserva,
-      codigo_reserva: codigoReserva,
-      metodo_pago: metodoPago.toUpperCase(),
-      celular_pago: celularPago,
-      estado: estadoReserva.toUpperCase(),
-      
-      mensaje: baseMessageText.replace(nombre, nombreCompletoConPago),
-      message: baseMessageText.replace(nombre, nombreCompletoConPago),
-      mensaje_html: baseMessageHtml.replace(`<strong>${nombre}</strong>`, `<strong>${nombreCompletoConPago}</strong>`),
-      message_html: baseMessageHtml.replace(`<strong>${nombre}</strong>`, `<strong>${nombreCompletoConPago}</strong>`)
+      total: resData.total,
+      adelanto: resData.adelanto,
+      saldo: resData.saldo,
+      metodo: pendiente ? 'Yape directo' : 'Yape',
+      operacion: pendiente ? operacion : null,
     };
 
-    const userParams = {
-      asunto: "RESERVA CONFIRMADA - BARBERÍA PRO",
-      subject: "RESERVA CONFIRMADA - BARBERÍA PRO",
-      nombre: nombre,
-      cliente: nombre,
-      user_name: nombre,
-      name: nombre,
-      
-      celular: celular,
-      user_phone: celular,
-      phone: celular,
-      telefono: celular,
-      
-      email: email,
-      user_email: email,
-      correo: email,
-      
-      fecha: fecha,
-      hora: hora,
-      codigo: codigoReserva,
-      codigo_reserva: codigoReserva,
-      metodo_pago: metodoPago.toUpperCase(),
-      celular_pago: celularPago,
-      estado: estadoReserva.toUpperCase(),
-      
-      mensaje: baseMessageText,
-      message: baseMessageText,
-      mensaje_html: baseMessageHtml,
-      message_html: baseMessageHtml
-    };
-
+    // 1. Al admin siempre (con el enlace al panel de ESTA web: localhost en pruebas, el dominio real en producción)
     try {
-      // 1. Email al administrador (EmailJS) - envuelto en try-catch individual para evitar bloqueos
-      try {
-        await emailjs.send(
-          'service_0ry9t41',
-          'template_96itk4u',
-          adminParams,
-          'QU8t-8ZyBlO4O4jDY'
-        );
-        console.log("✉️ Correo enviado al administrador");
-      } catch (emailAdminErr) {
-        console.error("❌ Error enviando email al admin:", emailAdminErr);
-      }
+      await enviarCorreoAdmin(cita, { pendiente, panelUrl: `${window.location.origin}/admin` });
+    } catch (err) {
+      console.error('❌ Error enviando correo al admin:', err);
+    }
 
-      // 2. Email al usuario (EmailJS) - envuelto en try-catch individual
-      let emailFailed = false;
+    // 2. Al cliente solo si la cita ya está confirmada. Con Yape directo se le envía cuando el admin aprueba el pago.
+    let emailFailed = false;
+    if (!pendiente) {
       try {
-        await emailjs.send(
-          'service_0ry9t41',
-          'template_ruofj9e',
-          userParams,
-          'QU8t-8ZyBlO4O4jDY'
-        );
-        console.log("✉️ Correo enviado al usuario");
-      } catch (emailUserErr) {
-        console.error("❌ Error enviando email al usuario:", emailUserErr);
+        await enviarCorreoClienteConfirmada(cita, { webUrl: window.location.origin });
+      } catch (err) {
+        console.error('❌ Error enviando correo al cliente:', err);
         emailFailed = true;
       }
-      setEmailErrorStatus(emailFailed);
-
-      // 3. Guardar en Google Sheets (Google Apps Script)
-      if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("Reemplaza")) {
-        try {
-          await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              nombre: nombreCompletoConPago,
-              celular,
-              email,
-              fecha,
-              hora,
-              metodo_pago: metodoPago.toUpperCase(),
-              celular_pago: celularPago,
-              codigo_reserva: codigoReserva,
-              estado: estadoReserva.toUpperCase()
-            }),
-          });
-          console.log("✅ Fila insertada en Google Sheets");
-        } catch (sheetErr) {
-          console.error("❌ Error en Google Sheets:", sheetErr);
-        }
-      }
-
-      setLoading(false);
-      setConfirmacionVisible(true);
-    } catch (err) {
-      // El pago ya fue aprobado y la cita guardada: solo fallaron las notificaciones
-      console.error('❌ Error enviando notificaciones de la reserva:', err);
-      setLoading(false);
-      setConfirmacionVisible(true);
     }
+    setEmailErrorStatus(emailFailed);
+
+    // 3. Guardar en Google Sheets (Google Apps Script)
+    if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("Reemplaza")) {
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: `${nombre} (${metodoPago.toUpperCase()} Ref: ${codigoReserva} - Cel: ${referenciaPago}${notaClub} - Estado: ${estadoReserva.toUpperCase()})`,
+            celular,
+            email,
+            fecha,
+            hora,
+            metodo_pago: metodoPago.toUpperCase(),
+            celular_pago: referenciaPago,
+            codigo_reserva: codigoReserva,
+            estado: estadoReserva.toUpperCase()
+          }),
+        });
+      } catch (sheetErr) {
+        console.error("❌ Error en Google Sheets:", sheetErr);
+      }
+    }
+
+    setLoading(false);
+    setConfirmacionVisible(true);
   };
 
   const cerrarConfirmacion = () => {
@@ -516,6 +431,9 @@ Estado:       ${estadoReserva.toUpperCase()}
     setHoraSeleccionada('');
     setCelularPago('');
     setOtpYape('');
+    setComprobante('');
+    setOperacion('');
+    setSeguimiento(null);
     setCodigoConfirmado('');
     setDescuentoAplicado(0);
     setServicioId('');
@@ -525,6 +443,9 @@ Estado:       ${estadoReserva.toUpperCase()}
     setConfirmacionVisible(false);
   };
 
+  const pagoListo = esManual
+    ? Boolean(comprobante) && operacion.length >= 4
+    : celularPago.length === 9 && otpYape.length === 6;
   const bloqueActivo = turnosPorBloque.find((t) => t.id === turnoActivo) || turnosPorBloque[0];
   const totalLibres = turnosPorBloque.reduce((acc, t) => acc + t.libres, 0);
   const progresoClub = fidelidad ? progresoNivel(fidelidad) : 0;
@@ -869,6 +790,17 @@ Estado:       ${estadoReserva.toUpperCase()}
                     </div>
                   )}
 
+                  {esManual ? (
+                    <PagoYapeManual
+                      monto={montos?.adelanto}
+                      yape={yapeCfg}
+                      comprobante={comprobante}
+                      onComprobante={(img) => { setError(null); setComprobante(img); }}
+                      operacion={operacion}
+                      onOperacion={setOperacion}
+                      deshabilitado={loading}
+                    />
+                  ) : (
                   <div className="yape-pago-card">
                     <div className="yape-pago-header">
                       <span className="yape-logo">yape</span>
@@ -914,15 +846,16 @@ Estado:       ${estadoReserva.toUpperCase()}
                       El código dura 2 minutos. El cobro se hace al instante y tu cita queda confirmada automáticamente.
                     </p>
                   </div>
+                  )}
 
                   <div className="wizard-buttons">
                     <button className="atras-btn" type="button" onClick={() => { setError(null); setPaso(3); }}>
                       <FaArrowLeft size={10} style={{ marginRight: '8px' }} /> Hora
                     </button>
                     <button
-                      className={`confirmar-btn-wizard ${celularPago.length !== 9 || otpYape.length !== 6 || loading ? 'disabled' : ''}`}
+                      className={`confirmar-btn-wizard ${!pagoListo || loading ? 'disabled' : ''}`}
                       type="submit"
-                      disabled={celularPago.length !== 9 || otpYape.length !== 6 || loading}
+                      disabled={!pagoListo || loading}
                     >
                       {loading ? (
                         <div className="loading-spinner-btn">
@@ -930,6 +863,8 @@ Estado:       ${estadoReserva.toUpperCase()}
                           <span className="spinner-dot"></span>
                           <span className="spinner-dot"></span>
                         </div>
+                      ) : esManual ? (
+                        'Enviar comprobante y reservar'
                       ) : (
                         `Pagar ${soles(montos?.adelanto)} con Yape`
                       )}
@@ -969,20 +904,55 @@ Estado:       ${estadoReserva.toUpperCase()}
       {confirmacionVisible && (
         <div className="cita-formulario-overlay" {...cerrarAlTocarFuera(cerrarConfirmacion)}>
           <div className="cita-formulario-contenido confirmacion-box fade-in-scale">
-            <div className="confirmacion-success-animation">
-              <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-                <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-              </svg>
-            </div>
+            {!estadoVerificacion && (
+              <div className="confirmacion-success-animation">
+                <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                  <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                  <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                </svg>
+              </div>
+            )}
             
-            <h2 className="confirmacion-title">¡Reserva Exitosa!</h2>
-            <p className="confirmacion-subtitle">
-              {emailErrorStatus 
-                ? "Hemos agendado tu cita correctamente en tu perfil. (Nota: Hubo un inconveniente al enviar la confirmación a tu correo, pero puedes ver tu reserva en tu perfil)."
-                : "Hemos agendado tu cita de manera correcta. Te llegará un correo de confirmación."
-              }
-            </p>
+            <h2 className="confirmacion-title">
+              {estadoVerificacion === 'pending' ? '¡Reserva recibida!'
+                : estadoVerificacion === 'cancelled' ? 'No pudimos validar tu Yape'
+                : '¡Reserva Exitosa!'}
+            </h2>
+            {estadoVerificacion ? (
+              <div className={`verif-estado ${estadoVerificacion}`} role="status" aria-live="polite">
+                <span className="verif-icono">
+                  {estadoVerificacion === 'approved' ? <FaCheck /> : estadoVerificacion === 'cancelled' ? <FaTimes /> : null}
+                </span>
+                {estadoVerificacion === 'pending' && (
+                  <>
+                    <strong>Estamos verificando tu Yape</strong>
+                    <p>Tu horario ya está separado. Esta pantalla se actualiza sola en cuanto confirmemos el pago y te enviaremos un correo con tu cita confirmada.</p>
+                    <span className={`verif-vivo ${verificacion.conectado ? 'on' : ''}`}>
+                      <i /> {verificacion.conectado ? 'En vivo' : 'Reconectando…'}
+                    </span>
+                  </>
+                )}
+                {estadoVerificacion === 'approved' && (
+                  <>
+                    <strong>¡Pago verificado! Tu cita está confirmada</strong>
+                    <p>Te esperamos. Puedes ver tu reserva en tu perfil.</p>
+                  </>
+                )}
+                {estadoVerificacion === 'cancelled' && (
+                  <>
+                    <strong>{verificacion.motivo || 'Tu reserva fue cancelada.'}</strong>
+                    <p>Si ya yapeaste, escríbenos por WhatsApp con tu código y lo resolvemos al toque.</p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p className="confirmacion-subtitle">
+                {emailErrorStatus
+                  ? "Hemos agendado tu cita correctamente en tu perfil. (Nota: Hubo un inconveniente al enviar la confirmación a tu correo, pero puedes ver tu reserva en tu perfil)."
+                  : "Hemos agendado tu cita de manera correcta. Te llegará un correo de confirmación."
+                }
+              </p>
+            )}
             
             <div className="confirmacion-resumen-box">
               <div className="resumen-item"><span>📍 Sede:</span> <a href={SEDE.mapa} target="_blank" rel="noopener noreferrer">{SEDE.nombre} · {SEDE.direccion}</a></div>
@@ -991,12 +961,18 @@ Estado:       ${estadoReserva.toUpperCase()}
               <div className="resumen-item"><span>📱 Celular:</span> <span>{celular}</span></div>
               <div className="resumen-item"><span>📅 Fecha:</span> <span>{fechaSeleccionada ? fechaSeleccionada.toLocaleDateString() : ''}</span></div>
               <div className="resumen-item"><span>⏰ Hora:</span> <span>{horaSeleccionada}</span></div>
-              {pagoConfirmado && <div className="resumen-item"><span>💜 Adelanto pagado:</span> <span>{soles(pagoConfirmado.adelanto)}</span></div>}
+              {pagoConfirmado && (
+                <div className="resumen-item">
+                  <span>💜 {estadoVerificacion && estadoVerificacion !== 'approved' ? 'Adelanto yapeado:' : 'Adelanto pagado:'}</span>
+                  <span>{soles(pagoConfirmado.adelanto)}</span>
+                </div>
+              )}
               {pagoConfirmado?.saldo > 0 && <div className="resumen-item resumen-restante"><span>⏳ Restante (en tu cita):</span> <span>{soles(pagoConfirmado.saldo)}</span></div>}
               {codigoConfirmado && <div className="resumen-item"><span>🎟️ Código:</span> <span>{codigoConfirmado}</span></div>}
             </div>
 
-            {fidelidad && user ? (
+            {/* Con Yape directo la reserva suma al Club recién cuando se verifica el pago */}
+            {fidelidad && user && !estadoVerificacion ? (
               <div className={`club-mini confirmacion nivel-${slugNivel(fidelidad.nivel)}`}>
                 <div className="club-mini-top">
                   <span className="club-badge"><FaCrown /> Club {fidelidad.nivel}</span>
@@ -1023,7 +999,7 @@ Estado:       ${estadoReserva.toUpperCase()}
 
             <div className="confirmacion-acciones">
               <a 
-                href={`https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(`¡Hola! Acabo de reservar una cita:\n👤 Cliente: ${nombre}\n💈 Servicio: ${servicioSel?.nombre || ''}\n📅 Fecha: ${fechaSeleccionada ? fechaSeleccionada.toLocaleDateString() : ''}\n⏰ Hora: ${horaSeleccionada}\n📱 Celular: ${celular}`)}`}
+                href={enlaceWhatsApp(WHATSAPP_NUMERO, `¡Hola! Acabo de reservar una cita:\n👤 Cliente: ${nombre}\n💈 Servicio: ${servicioSel?.nombre || ''}\n📅 Fecha: ${fechaSeleccionada ? fechaSeleccionada.toLocaleDateString() : ''}\n⏰ Hora: ${horaSeleccionada}\n📱 Celular: ${celular}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="whatsapp-confirm-btn"

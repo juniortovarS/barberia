@@ -6,7 +6,7 @@ import { FaShoppingCart, FaSearch, FaBars, FaTimes, FaUser } from "react-icons/f
 import { useCarrito } from "./CarritoContext";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../supabaseClient"; // ✅ IMPORTA CLIENTE DE SUPABASE
-import { ADMIN_EMAILS } from "../config";
+import { ADMIN_EMAILS, SITIO_URL } from "../config";
 import TemaToggle from "./TemaToggle";
 import { cerrarAlTocarFuera } from "../utils/modal";
 
@@ -160,7 +160,7 @@ const Navbar = () => {
     setAuthLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-        redirectTo: window.location.origin,
+        redirectTo: SITIO_URL, // siempre la web real, aunque se pida desde localhost
       });
       if (error) throw error;
       setAuthSuccess("Si el correo está registrado, te enviamos un enlace para crear una nueva contraseña. Revisa tu bandeja (y spam).");

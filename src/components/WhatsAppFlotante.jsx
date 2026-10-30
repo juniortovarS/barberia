@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
-import { WHATSAPP_NUMERO } from '../config'; // número configurado en src/config.js
+import { WHATSAPP_NUMERO, enlaceWhatsApp } from '../config'; // número configurado en src/config.js
 
 const MENSAJE = '¡Hola! Quisiera información para reservar una cita 💈';
 
@@ -32,7 +32,7 @@ const WhatsAppFlotante = () => (
     <style>{estilos}</style>
     <a
       className="wa-flotante"
-      href={`https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(MENSAJE)}`}
+      href={enlaceWhatsApp(WHATSAPP_NUMERO, MENSAJE)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Escríbenos por WhatsApp"

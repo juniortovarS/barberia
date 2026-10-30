@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FaBolt, FaCalendarDay, FaCheck, FaClock, FaCoins, FaCrown, FaCut, FaHourglassHalf, FaListUl,
   FaMoneyBillWave, FaPhone, FaPlus, FaSearch, FaSyncAlt, FaTimes, FaUsers, FaWhatsapp, FaEnvelope,
+  FaBell, FaHashtag, FaSearchPlus, FaReceipt, FaBellSlash, FaVolumeUp,
 } from 'react-icons/fa';
-import emailjs from '@emailjs/browser';
+import { enviarCorreoClienteConfirmada, citaDesdeReserva } from '../utils/correos';
 import '../styles/AdminPro.css';
 import { API_URL } from '../config';
 import { supabase } from '../supabaseClient';
@@ -11,6 +12,12 @@ import { NIVELES_FIDELIDAD, cabeceraSesion } from '../utils/fidelidad';
 import { SERVICIOS, duracionTexto, soles, fasePorHora, inicioDeCita } from '../utils/servicios';
 import { turnosDelDia, fechaISO } from '../utils/horario';
 import { useEventosAdmin, sonarAviso } from '../utils/eventosAdmin';
+import { useAlarmaReserva, etiquetaVoz, VELOCIDADES } from '../utils/alarmaReserva';
+
+// Tiempos del aviso de "nueva reserva"
+const POPUP_MS = 60 * 1000; // el popup de arriba se queda 1 minuto (o hasta aceptar/rechazar)
+const RECORDATORIO_CADA_MS = 2 * 60 * 1000; // si no se acepta ni rechaza, recordatorio a los 2 min…
+const MAX_RECORDATORIOS = 2; // …y como máximo 2 veces (minuto 2 y minuto 4)
 
 // ---------- utilidades ----------
 const nombreLimpio = (nombre = '') => nombre.split(' (')[0].trim() || 'Sin nombre';
@@ -29,6 +36,62 @@ const horaFin = (r) => {
 const ordenarPorHora = (a, b) => (inicioDeCita(a.fecha_cita, a.hora_cita) || 0) - (inicioDeCita(b.fecha_cita, b.hora_cita) || 0);
 
 const ETIQUETA_ESTADO = { approved: 'Confirmada', pending: 'Por aprobar', cancelled: 'Cancelada' };
+
+// Yape directo: el cliente subió la captura y la cita espera que el admin verifique el pago
+const esYapeManual = (r) => r.pago_metodo === 'yape_manual';
+const porVerificarPago = (r) => esYapeManual(r) && estadoNorm(r.estado) === 'pending';
+
+// Mismas claves que MOTIVOS_RECHAZO del backend
+const MOTIVOS_RECHAZO = [
+  ['no_recibido', 'No llegó el Yape'],
+  ['monto_incorrecto', 'El monto no coincide'],
+  ['comprobante_invalido', 'La captura no es válida'],
+  ['horario', 'El horario ya no está disponible'],
+];
+
+const haceCuanto = (fecha, ahora) => {
+  const min = Math.max(0, Math.floor((ahora - new Date(fecha)) / 60000));
+  if (min < 1) return 'Ahora mismo';
+  if (min < 60) return `Hace ${min} min`;
+  return `Hace ${Math.floor(min / 60)} h ${min % 60} min`;
+};
+
+// Aviso del sistema operativo cuando el panel está en otra pestaña o minimizado
+const notificarEscritorio = (titulo, cuerpo) => {
+  try {
+    if (!document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const n = new Notification(titulo, { body: cuerpo, tag: 'yape-por-verificar', renotify: true });
+    n.onclick = () => { window.focus(); n.close(); };
+  } catch { /* algunos móviles solo permiten notificaciones desde un service worker */ }
+};
+
+// Enlaces temporales de las capturas (el bucket es privado; el backend firma un enlace de 10 min)
+const enlacesComprobante = new Map();
+const useComprobante = (r) => {
+  const [estado, setEstado] = useState({ url: null, error: false });
+  useEffect(() => {
+    if (!r?.voucher_url) return undefined;
+    const enCache = enlacesComprobante.get(r.id);
+    if (enCache && enCache.vence > Date.now()) {
+      setEstado({ url: enCache.url, error: false });
+      return undefined;
+    }
+    let cancelado = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/admin/reservas/${r.id}/comprobante`, { headers: await cabeceraSesion() });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.url) throw new Error(data.error || 'sin enlace');
+        enlacesComprobante.set(r.id, { url: data.url, vence: Date.now() + 8 * 60000 });
+        if (!cancelado) setEstado({ url: data.url, error: false });
+      } catch {
+        if (!cancelado) setEstado({ url: null, error: true });
+      }
+    })();
+    return () => { cancelado = true; };
+  }, [r?.id, r?.voucher_url]);
+  return estado;
+};
 const ETIQUETA_FASE = { proxima: 'Próxima', en_curso: 'En curso', terminada: 'Terminada' };
 
 const fechaLarga = (iso) => {
@@ -58,12 +121,70 @@ const FilaReserva = ({ r, ahora, onAbrir, mostrarFecha }) => {
         <small><FaCut /> {r.servicio || 'Servicio no especificado'}{r.duracion_min ? ` · ${duracionTexto(r.duracion_min)}` : ''}</small>
       </span>
       <span className="ad-fila-chips">
-        {est !== 'approved' && <span className={`ad-chip ${est}`}>{ETIQUETA_ESTADO[est]}</span>}
+        {porVerificarPago(r)
+          ? <span className="ad-chip yape"><FaReceipt /> Verificar Yape</span>
+          : est !== 'approved' && <span className={`ad-chip ${est}`}>{ETIQUETA_ESTADO[est]}</span>}
         {est === 'approved' && fase === 'en_curso' && <span className="ad-chip vivo"><FaBolt /> En curso</span>}
         {est === 'approved' && <ChipSaldo r={r} />}
         {descuentoDe(r) > 0 && <span className="ad-chip club"><FaCrown /> -{descuentoDe(r)}%</span>}
       </span>
     </button>
+  );
+};
+
+// Tarjeta de un Yape por verificar: captura, datos para comparar con la app y botones de decisión
+const TarjetaVerificacion = ({ r, ahora, ocupado, onVerificar, onVer }) => {
+  const { url, error } = useComprobante(r);
+  const [rechazando, setRechazando] = useState(false);
+  const [motivo, setMotivo] = useState(MOTIVOS_RECHAZO[0][0]);
+
+  return (
+    <article className="ad-verif">
+      <button type="button" className="ad-verif-foto" onClick={() => url && onVer(url)} disabled={!url} aria-label="Ampliar captura">
+        {url ? <img src={url} alt={`Captura de Yape de ${nombreLimpio(r.nombre)}`} /> : <span>{error ? 'Sin imagen' : 'Cargando…'}</span>}
+        {url && <small><FaSearchPlus /> Ampliar</small>}
+      </button>
+
+      <div className="ad-verif-info">
+        <div className="ad-verif-top">
+          <strong>{nombreLimpio(r.nombre)}</strong>
+          <span className="ad-verif-tiempo">{haceCuanto(r.fecha_registro, ahora)}</span>
+        </div>
+        <div className="ad-verif-monto">{soles(r.adelanto)}</div>
+        <ul className="ad-verif-datos">
+          <li><FaHashtag /> Operación <code>{r.yape_operacion || '—'}</code></li>
+          <li><FaCut /> {r.servicio} · {fechaLarga(r.fecha_cita)} · {r.hora_cita}</li>
+          <li><FaPhone /> {r.celular}</li>
+        </ul>
+        <p className="ad-verif-ayuda">Abre tu app de Yape y confirma que llegó <b>{soles(r.adelanto)}</b> con este Nº de operación.</p>
+
+        {rechazando ? (
+          <div className="ad-verif-rechazo">
+            <label>
+              Motivo (lo verá el cliente)
+              <select value={motivo} onChange={(e) => setMotivo(e.target.value)}>
+                {MOTIVOS_RECHAZO.map(([id, texto]) => <option key={id} value={id}>{texto}</option>)}
+              </select>
+            </label>
+            <div className="ad-verif-acciones">
+              <button type="button" className="ad-btn peligro" disabled={ocupado} onClick={() => onVerificar(r, 'rechazar', motivo)}>
+                <FaTimes /> Rechazar y liberar horario
+              </button>
+              <button type="button" className="ad-btn fantasma" disabled={ocupado} onClick={() => setRechazando(false)}>Volver</button>
+            </div>
+          </div>
+        ) : (
+          <div className="ad-verif-acciones">
+            <button type="button" className="ad-btn verde" disabled={ocupado} onClick={() => onVerificar(r, 'aprobar')}>
+              <FaCheck /> {ocupado ? 'Guardando…' : 'Llegó · confirmar cita'}
+            </button>
+            <button type="button" className="ad-btn peligro" disabled={ocupado} onClick={() => setRechazando(true)}>
+              <FaTimes /> No llegó
+            </button>
+          </div>
+        )}
+      </div>
+    </article>
   );
 };
 
@@ -80,6 +201,9 @@ const Admin = () => {
   const [avisos, setAvisos] = useState([]);
   const [filtro, setFiltro] = useState('proximas');
   const [busqueda, setBusqueda] = useState('');
+  const [visor, setVisor] = useState(null); // captura ampliada
+  const [permisoAvisos, setPermisoAvisos] = useState(() => ('Notification' in window ? Notification.permission : 'unsupported'));
+  const verificadosAqui = useRef(new Set()); // pagos verificados desde este dispositivo (sin aviso duplicado)
 
   // ---------- datos ----------
   const cargarReservas = useCallback(async () => {
@@ -121,21 +245,99 @@ const Admin = () => {
     setDetalle((d) => (d && d.id === reserva.id ? { ...d, ...reserva } : d));
   }, []);
 
-  // 🔴 Tiempo real: pagos del restante y reservas nuevas llegan sin recargar
+  // 🔔 Alarma con voz (máx. 30 s o hasta que el admin se mueva)
+  const alarma = useAlarmaReserva();
+
+  // Popup de arriba: { id, nombre, recordatorio, requiereAccion } — se cierra solo a los 60 s
+  const [popup, setPopup] = useState(null);
+  const timerPopup = useRef(null);
+  const abrirPopup = useCallback((datos) => {
+    clearTimeout(timerPopup.current);
+    setPopup(datos);
+    timerPopup.current = setTimeout(() => setPopup(null), POPUP_MS);
+  }, []);
+  useEffect(() => () => clearTimeout(timerPopup.current), []);
+
+  // Recordatorios de Yapes sin aceptar ni rechazar: id → { desde, enviados }
+  const recordatorios = useRef(new Map());
+
+  // 🔴 Tiempo real: pagos del restante, Yapes por verificar y reservas nuevas llegan sin recargar
   const estadoVivo = useEventosAdmin((tipo, datos) => {
     if (tipo !== 'reserva' || !datos?.reserva) return;
     aplicarReserva(datos.reserva);
     const quien = primerNombre(datos.reserva.nombre).toUpperCase();
-    if (datos.tipo === 'saldo_pagado') {
+    const nombreVoz = nombreLimpio(datos.reserva.nombre).split(' ')[0];
+    if (datos.tipo === 'pago_por_verificar') {
+      // Suena hasta que se acepte o rechace (máx. 45 s); los recordatorios cuentan desde ahora
+      recordatorios.current.set(datos.reserva.id, { desde: Date.now(), enviados: 0 });
+      if (alarma.activada) {
+        alarma.iniciar(`¡Hola! Tienes una nueva reserva de ${nombreVoz}. Por favor, revisa el Yape y confírmala.`, { reservaId: datos.reserva.id });
+      } else sonarAviso();
+      abrirPopup({ id: datos.reserva.id, nombre: nombreLimpio(datos.reserva.nombre), recordatorio: false, requiereAccion: true });
+      avisar(`💜 ${quien} yapeó ${soles(datos.reserva.adelanto)} · ${datos.reserva.servicio || 'servicio'} · ${datos.reserva.fecha_cita} ${datos.reserva.hora_cita} — verifícalo`, 'yape');
+      notificarEscritorio('💜 Nuevo Yape por verificar', `${nombreLimpio(datos.reserva.nombre)} · ${soles(datos.reserva.adelanto)} · Op. ${datos.reserva.yape_operacion || ''}`);
+      setPestana((p) => (p === 'reservas' ? p : 'hoy'));
+    } else if (datos.tipo === 'pago_aprobado' || datos.tipo === 'pago_rechazado') {
+      // Lo verificó otro dispositivo (en este ya se mostró el aviso al hacer clic)
+      if (!verificadosAqui.current.has(datos.reserva.id)) {
+        avisar(`${datos.tipo === 'pago_aprobado' ? '✅' : '✖️'} El Yape de ${quien} fue ${datos.tipo === 'pago_aprobado' ? 'aprobado' : 'rechazado'} desde otro dispositivo`);
+      }
+    } else if (datos.tipo === 'saldo_pagado') {
       sonarAviso();
       avisar(`💰 ${quien} pagó el restante de ${soles(datos.reserva.saldo)}${datos.reserva.saldo_metodo === 'efectivo' ? ' (efectivo)' : ' con Yape'}`, 'ok');
     } else if (datos.tipo === 'nueva') {
-      sonarAviso();
+      // Las citas que crea el propio admin desde "Nueva cita" (código ADM-) no hacen sonar la alarma
+      const delPanel = String(datos.reserva.codigo || '').startsWith('ADM-');
+      if (!delPanel && alarma.activada) {
+        // Ya viene pagada (no hay nada que aceptar): se avisa 2 veces
+        alarma.iniciar(`¡Hola! Tienes una nueva reserva de ${nombreVoz}. Revísala en el panel, por favor.`, { repeticiones: 2 });
+      } else sonarAviso();
+      if (!delPanel) abrirPopup({ id: datos.reserva.id, nombre: nombreLimpio(datos.reserva.nombre), recordatorio: false, requiereAccion: false });
       avisar(`📅 Nueva reserva: ${quien} · ${datos.reserva.servicio || 'servicio'} · ${datos.reserva.fecha_cita} ${datos.reserva.hora_cita}`);
     }
   });
 
+  const activarAvisos = async () => {
+    try { setPermisoAvisos(await Notification.requestPermission()); } catch { /* sin soporte */ }
+  };
+
   // ---------- acciones ----------
+  const verificarPago = async (r, decision, motivo) => {
+    // Se aceptó o rechazó: se calla su alarma, se cierra su popup y no habrá más recordatorios
+    if (alarma.sonando?.reservaId === r.id) alarma.detener();
+    setPopup((p) => (p?.id === r.id ? null : p));
+    recordatorios.current.delete(r.id);
+    setAccionId(r.id);
+    verificadosAqui.current.add(r.id);
+    const quien = nombreLimpio(r.nombre);
+    try {
+      const res = await fetch(`${API_URL}/admin/reservas/${r.id}/verificar-pago`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await cabeceraSesion()) },
+        body: JSON.stringify({ decision, motivo }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.reserva) aplicarReserva(data.reserva);
+      if (!res.ok) throw new Error(data.error || 'No se pudo guardar');
+      if (decision === 'aprobar') {
+        // Recién ahora la cita está reservada: se envía el correo de confirmación al cliente
+        enviarCorreoClienteConfirmada(citaDesdeReserva(data.reserva), { webUrl: window.location.origin })
+          .then(() => avisar(`✅ Cita de ${quien} confirmada. Le enviamos el correo de confirmación.`, 'ok'))
+          .catch((err) => {
+            console.error('Error enviando correo:', err);
+            avisar(`✅ Cita de ${quien} confirmada, pero no se pudo enviar el correo. Avísale por WhatsApp.`, 'error');
+          });
+      } else {
+        avisar(`Pago de ${quien} rechazado. El horario quedó libre.`);
+      }
+      setDetalle((d) => (d && d.id === r.id ? null : d));
+    } catch (err) {
+      avisar(`❌ ${err.message}`, 'error');
+    } finally {
+      setAccionId(null);
+    }
+  };
+
   const cambiarEstado = async (r, estado) => {
     if (estado === 'cancelled' && !window.confirm(`¿Cancelar la cita de ${nombreLimpio(r.nombre)}?`)) return;
     setAccionId(r.id);
@@ -182,6 +384,9 @@ const Admin = () => {
     .filter((r) => r.saldo_estado === 'pendiente' && fasePorHora(r, ahora) === 'terminada')
     .sort(ordenarPorHora);
   const porAprobar = reservas.filter((r) => estadoNorm(r.estado) === 'pending');
+  const porVerificar = reservas
+    .filter(porVerificarPago)
+    .sort((a, b) => new Date(a.fecha_registro) - new Date(b.fecha_registro));
 
   const cobradoHoy = citasHoy.reduce(
     (acc, r) => acc + (Number(r.adelanto) || 0) + (r.saldo_estado === 'pagado' ? Number(r.saldo) || 0 : 0), 0);
@@ -223,6 +428,49 @@ const Admin = () => {
       .sort((a, b) => b.aprobadas - a.aprobadas);
   }, [reservas, busqueda]);
 
+  // Si una reserva deja de estar pendiente (aquí, en otro dispositivo o al recargar), se calla su alarma y su popup
+  const idsPorVerificar = porVerificar.map((r) => r.id).join(',');
+  const { activada: alarmaActivada, sonando: alarmaSonando, iniciar: iniciarAlarma, detener: detenerAlarma } = alarma;
+  useEffect(() => {
+    const pendientes = new Set(idsPorVerificar ? idsPorVerificar.split(',') : []);
+    if (alarmaSonando?.reservaId != null && !pendientes.has(String(alarmaSonando.reservaId))) detenerAlarma();
+    setPopup((p) => (p?.requiereAccion && !pendientes.has(String(p.id)) ? null : p));
+    [...recordatorios.current.keys()].forEach((id) => { if (!pendientes.has(String(id))) recordatorios.current.delete(id); });
+  }, [idsPorVerificar, alarmaSonando, detenerAlarma]);
+
+  // 🔁 Recordatorio: si a los 2 minutos no se aceptó ni rechazó, la voz lo vuelve a decir (máx. 2 veces)
+  const porVerificarRef = useRef(porVerificar);
+  porVerificarRef.current = porVerificar;
+  useEffect(() => {
+    const revisar = () => {
+      if (!alarmaActivada || alarmaSonando) return;
+      const ahoraMs = Date.now();
+      for (const r of porVerificarRef.current) {
+        if (!recordatorios.current.has(r.id)) recordatorios.current.set(r.id, { desde: ahoraMs, enviados: 0 });
+        const seg = recordatorios.current.get(r.id);
+        if (seg.enviados >= MAX_RECORDATORIOS) continue;
+        if (ahoraMs - seg.desde < RECORDATORIO_CADA_MS * (seg.enviados + 1)) continue;
+        seg.enviados += 1;
+        const nombre = nombreLimpio(r.nombre);
+        iniciarAlarma(`Recordatorio de reserva. ${nombre.split(' ')[0]} está esperando que confirmes su Yape.`, {
+          reservaId: r.id, repeticiones: 2, conGrabacion: false,
+        });
+        abrirPopup({ id: r.id, nombre, recordatorio: true, requiereAccion: true });
+        return; // uno a la vez
+      }
+    };
+    revisar();
+    const t = setInterval(revisar, 5000);
+    return () => clearInterval(t);
+  }, [idsPorVerificar, alarmaActivada, alarmaSonando, iniciarAlarma, abrirPopup]);
+
+  // Pestaña del navegador con el contador, para verlo aunque el panel esté detrás
+  useEffect(() => {
+    const base = 'Panel · Barber Studio JP';
+    document.title = porVerificar.length ? `(${porVerificar.length}) Yape por verificar · ${base}` : base;
+  }, [porVerificar.length]);
+  useEffect(() => () => { document.title = 'Barber Studio JP'; }, []);
+
   // ---------- render ----------
   return (
     <div className="ad">
@@ -237,6 +485,46 @@ const Admin = () => {
             <span className={`ad-vivo ${estadoVivo}`} title="Los pagos y reservas nuevas aparecen solos">
               <i /> {estadoVivo === 'en_vivo' ? 'En vivo' : estadoVivo === 'conectando' ? 'Conectando…' : 'Reconectando…'}
             </span>
+            <button
+              type="button"
+              className={`ad-btn ${alarma.activada && !alarma.desbloqueada ? 'ad-alarma-pendiente' : 'fantasma'}`}
+              onClick={() => {
+                if (alarma.activada && alarma.desbloqueada) alarma.cambiarActivada(false);
+                else { alarma.cambiarActivada(true); alarma.probar(); }
+              }}
+              title={alarma.activada ? 'La alarma con voz suena hasta que aceptes o rechaces la reserva (máx. 45 s). Clic para apagarla.' : 'Clic para activar la alarma con voz'}
+            >
+              {alarma.activada ? <FaBell /> : <FaBellSlash />}
+              <span className="ad-ocultar-movil">
+                {!alarma.activada ? 'Alarma apagada' : alarma.desbloqueada ? 'Alarma activa' : 'Activar alarma'}
+              </span>
+            </button>
+            {alarma.activada && !alarma.grabacion && alarma.voces.length > 1 && (
+              <label
+                className="ad-voz"
+                title={alarma.voces.some((v) => /natural|online/i.test(v.name))
+                  ? 'Voz de la alarma'
+                  : 'Para una voz mucho más humana (tipo Alexa), abre el panel en Microsoft Edge y elige una voz "Natural".'}
+              >
+                <FaVolumeUp />
+                <select value={alarma.vozActual?.name || ''} onChange={(e) => alarma.cambiarVoz(e.target.value)} aria-label="Voz de la alarma">
+                  {alarma.voces.map((v) => <option key={v.name} value={v.name}>{etiquetaVoz(v)}</option>)}
+                </select>
+              </label>
+            )}
+            {alarma.activada && !alarma.grabacion && (
+              <label className="ad-voz" title="Velocidad de la voz (al cambiarla escuchas una prueba)">
+                <FaBolt />
+                <select value={alarma.velocidad} onChange={(e) => alarma.cambiarVelocidad(e.target.value)} aria-label="Velocidad de la voz">
+                  {VELOCIDADES.map((v) => <option key={v.id} value={v.id}>{v.etiqueta}</option>)}
+                </select>
+              </label>
+            )}
+            {permisoAvisos === 'default' && (
+              <button type="button" className="ad-btn fantasma" onClick={activarAvisos} title="Recibe un aviso aunque el panel esté minimizado">
+                <FaBell /> <span className="ad-ocultar-movil">Activar avisos</span>
+              </button>
+            )}
             <button type="button" className="ad-btn fantasma" onClick={cargarReservas} title="Actualizar">
               <FaSyncAlt /> <span className="ad-ocultar-movil">Actualizar</span>
             </button>
@@ -245,7 +533,7 @@ const Admin = () => {
 
         <nav className="ad-tabs" aria-label="Secciones">
           {[
-            ['hoy', <FaCalendarDay />, 'Hoy', enCurso.length],
+            ['hoy', <FaCalendarDay />, 'Hoy', porVerificar.length || enCurso.length],
             ['reservas', <FaListUl />, 'Reservas', porAprobar.length],
             ['clientes', <FaUsers />, 'Clientes', 0],
             ['nueva', <FaPlus />, 'Nueva cita', 0],
@@ -257,10 +545,36 @@ const Admin = () => {
           ))}
         </nav>
 
+        {alarma.activada && !alarma.desbloqueada && (
+          <button type="button" className="ad-alarma-desbloquear" onClick={() => alarma.probar()}>
+            <FaVolumeUp /> Toca aquí una vez para que la alarma con voz pueda sonar cuando llegue una reserva
+          </button>
+        )}
+
         {error && <div className="ad-error">{error}</div>}
         {cargando && <div className="ad-cargando"><span /> Cargando reservas…</div>}
 
         {/* ===================== HOY ===================== */}
+        {!cargando && porVerificar.length > 0 && (pestana === 'hoy' || pestana === 'reservas') && (
+          <section className="ad-seccion ad-verif-seccion">
+            <h2 className="ad-titulo yape">
+              <FaReceipt /> Yapes por verificar <b className="ad-badge">{porVerificar.length}</b>
+            </h2>
+            <div className="ad-verif-grid">
+              {porVerificar.map((r) => (
+                <TarjetaVerificacion
+                  key={r.id}
+                  r={r}
+                  ahora={ahora}
+                  ocupado={accionId === r.id}
+                  onVerificar={verificarPago}
+                  onVer={setVisor}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {!cargando && pestana === 'hoy' && (
           <>
             <section className="ad-kpis">
@@ -418,7 +732,9 @@ const Admin = () => {
                 <div><span>Precio</span><b>{soles(detalle.precio)}</b></div>
                 {descuentoDe(detalle) > 0 && <div className="dsc"><span>Descuento Club</span><b>-{descuentoDe(detalle)}%</b></div>}
                 <div><span>Total</span><b>{soles(detalle.total)}</b></div>
-                <div className="ok"><span>Adelanto (Yape)</span><b>{soles(detalle.adelanto)} ✓</b></div>
+                {porVerificarPago(detalle)
+                  ? <div className="pendiente"><span>Adelanto (Yape directo) · por verificar</span><b>{soles(detalle.adelanto)}</b></div>
+                  : <div className="ok"><span>Adelanto ({esYapeManual(detalle) ? 'Yape directo' : 'Yape'})</span><b>{soles(detalle.adelanto)} ✓</b></div>}
                 {Number(detalle.saldo) > 0 && (
                   <div className={`restante ${detalle.saldo_estado}`}>
                     <span>{detalle.saldo_estado === 'pagado' ? `Restante pagado (${detalle.saldo_metodo})` : 'Restante por pagar'}</span>
@@ -440,9 +756,17 @@ const Admin = () => {
             <div className="ad-contacto">
               <a href={`https://wa.me/51${String(detalle.celular).replace(/\D/g, '').slice(-9)}`} target="_blank" rel="noopener noreferrer"><FaWhatsapp /> {detalle.celular}</a>
               {detalle.email && <a href={`mailto:${detalle.email}`}><FaEnvelope /> {detalle.email}</a>}
-              {detalle.voucher_url && <a href={detalle.voucher_url} target="_blank" rel="noopener noreferrer">Ver voucher</a>}
+              {detalle.yape_operacion && <span className="ad-contacto-dato"><FaHashtag /> Op. {detalle.yape_operacion}</span>}
             </div>
 
+            {esYapeManual(detalle) && detalle.voucher_url && <ComprobanteDetalle r={detalle} onVer={setVisor} />}
+            {estadoNorm(detalle.estado) === 'cancelled' && detalle.pago_motivo_rechazo && (
+              <p className="ad-ayuda">Rechazado: {detalle.pago_motivo_rechazo}{detalle.pago_revisado_por ? ` (${detalle.pago_revisado_por})` : ''}</p>
+            )}
+
+            {porVerificarPago(detalle) ? (
+              <AccionesVerificacionDetalle r={detalle} ocupado={accionId === detalle.id} onVerificar={verificarPago} />
+            ) : (
             <div className="ad-modal-acciones">
               {detalle.saldo_estado === 'pendiente' && estadoNorm(detalle.estado) !== 'cancelled' && (
                 <button type="button" className="ad-btn verde" disabled={accionId === detalle.id} onClick={() => cobrarEnEfectivo(detalle)}>
@@ -460,7 +784,34 @@ const Admin = () => {
                 </button>
               )}
             </div>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* ===================== ALARMA SONANDO ===================== */}
+      {popup && (
+        <div className={`ad-alarma ${popup.recordatorio ? 'recordatorio' : ''}`} role="alert">
+          <span className="ad-alarma-icono"><FaBell /></span>
+          <div className="ad-alarma-texto">
+            <strong>{popup.recordatorio ? `Recordatorio de reserva · ${popup.nombre}` : `¡Tienes una nueva reserva de ${popup.nombre}!`}</strong>
+            <small>
+              {popup.requiereAccion
+                ? 'Revisa el Yape y acéptala o recházala. La alarma se calla en cuanto lo hagas.'
+                : 'Ya viene pagada. Revísala en el panel.'}
+            </small>
+          </div>
+          <button type="button" className="ad-btn primario" onClick={() => { setPestana('hoy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+            Ver reserva
+          </button>
+        </div>
+      )}
+
+      {/* ===================== CAPTURA AMPLIADA ===================== */}
+      {visor && (
+        <div className="ad-modal-fondo ad-visor" onMouseDown={(e) => { if (e.target === e.currentTarget) setVisor(null); }}>
+          <button type="button" className="ad-modal-cerrar" onClick={() => setVisor(null)} aria-label="Cerrar"><FaTimes /></button>
+          <img src={visor} alt="Captura del Yape" />
         </div>
       )}
 
@@ -490,6 +841,37 @@ const Admin = () => {
       {/* ===================== AVISOS EN VIVO ===================== */}
       <div className="ad-avisos" aria-live="polite">
         {avisos.map((a) => <div key={a.id} className={`ad-aviso ${a.tipo}`}>{a.texto}</div>)}
+      </div>
+    </div>
+  );
+};
+
+// Captura dentro del detalle de la reserva
+const ComprobanteDetalle = ({ r, onVer }) => {
+  const { url, error } = useComprobante(r);
+  return (
+    <button type="button" className="ad-comprobante" onClick={() => url && onVer(url)} disabled={!url}>
+      {url ? <img src={url} alt="Captura del Yape" /> : <span>{error ? 'No se pudo cargar la captura' : 'Cargando captura…'}</span>}
+      {url && <small><FaSearchPlus /> Ver captura completa</small>}
+    </button>
+  );
+};
+
+// Aprobar / rechazar desde el detalle (mismo flujo que la tarjeta)
+const AccionesVerificacionDetalle = ({ r, ocupado, onVerificar }) => {
+  const [motivo, setMotivo] = useState(MOTIVOS_RECHAZO[0][0]);
+  return (
+    <div className="ad-modal-acciones">
+      <button type="button" className="ad-btn verde" disabled={ocupado} onClick={() => onVerificar(r, 'aprobar')}>
+        <FaCheck /> Llegó el Yape · confirmar cita
+      </button>
+      <div className="ad-rechazo-linea">
+        <select value={motivo} onChange={(e) => setMotivo(e.target.value)} aria-label="Motivo del rechazo">
+          {MOTIVOS_RECHAZO.map(([id, texto]) => <option key={id} value={id}>{texto}</option>)}
+        </select>
+        <button type="button" className="ad-btn peligro" disabled={ocupado} onClick={() => onVerificar(r, 'rechazar', motivo)}>
+          <FaTimes /> Rechazar
+        </button>
       </div>
     </div>
   );
@@ -549,15 +931,20 @@ const NuevaCita = ({ reservas, onCreada }) => {
       if (!res.ok) throw new Error(data.error || 'No se pudo guardar');
 
       if (enviarCorreo) {
-        const mensaje = `Hola ${form.nombre},\n\nTu cita quedó registrada:\nServicio: ${servicio.nombre} (${duracionTexto(servicio.duracion)})\nFecha: ${form.fecha}\nHora: ${form.hora}\nTotal: ${soles(servicio.precio)} (se paga en el local)\nCódigo: ${codigo}\n\n¡Te esperamos en Barber Studio JP!`;
-        emailjs.send('service_0ry9t41', 'template_ruofj9e', {
-          asunto: 'CITA CONFIRMADA - BARBER STUDIO JP',
-          subject: 'CITA CONFIRMADA - BARBER STUDIO JP',
-          nombre: form.nombre, name: form.nombre, user_name: form.nombre,
-          email: form.email, user_email: form.email, correo: form.email,
-          fecha: form.fecha, hora: form.hora, codigo, codigo_reserva: codigo,
-          mensaje, message: mensaje,
-        }, 'QU8t-8ZyBlO4O4jDY').catch((err) => console.error('Error enviando correo:', err));
+        enviarCorreoClienteConfirmada({
+          nombre: form.nombre,
+          celular: form.celular,
+          email: form.email,
+          servicio: servicio.nombre,
+          duracion: servicio.duracion,
+          fecha: form.fecha,
+          hora: form.hora,
+          codigo,
+          total: servicio.precio,
+          adelanto: 0,
+          saldo: servicio.precio,
+          metodo: 'En el local',
+        }, { webUrl: window.location.origin }).catch((err) => console.error('Error enviando correo:', err));
       }
       onCreada(data.data);
     } catch (err) {

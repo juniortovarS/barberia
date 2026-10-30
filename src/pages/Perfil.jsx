@@ -71,6 +71,23 @@ const Perfil = () => {
 
   useEffect(() => { cargarReservas(); }, [cargarReservas]);
 
+  // Cómo se paga el restante: con Yape directo se paga en el local (el cobro en línea es con Mercado Pago)
+  const [pagoEnLinea, setPagoEnLinea] = useState(false);
+  useEffect(() => {
+    fetch(`${API_URL}/config-pago`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => setPagoEnLinea(cfg?.yape?.modo === 'mercadopago'))
+      .catch(() => {});
+  }, []);
+
+  // Mientras un Yape directo está en verificación, la lista se actualiza sola
+  const hayVerificacion = reservas.some((r) => r.estado === 'pending' && r.pago_metodo === 'yape_manual');
+  useEffect(() => {
+    if (!hayVerificacion) return undefined;
+    const t = setInterval(cargarReservas, 15000);
+    return () => clearInterval(t);
+  }, [hayVerificacion, cargarReservas]);
+
   const { proximas, historial } = useMemo(() => {
     const hoy = hoyISO();
     // Próximas: las que aún no pasan y las que todavía deben el restante
@@ -252,11 +269,12 @@ const Perfil = () => {
             ) : (
               <ul className="perfil-citas-lista">
                 {lista.map((r) => {
-                  const estado = ESTADOS[r.estado] || ESTADOS.pending;
+                  const verificandoYape = r.estado === 'pending' && r.pago_metodo === 'yape_manual';
+                  const estado = verificandoYape ? { texto: 'Verificando tu Yape', clase: 'pendiente' } : ESTADOS[r.estado] || ESTADOS.pending;
                   const dscto = r.descuento_pct || descuentoDe(r.nombre);
                   const fase = fasePorHora(r, ahora);
                   const debeSaldo = r.saldo_estado === 'pendiente' && Number(r.saldo) > 0 && r.estado !== 'cancelled';
-                  const puedePagar = debeSaldo && fase !== 'proxima';
+                  const puedePagar = pagoEnLinea && debeSaldo && r.estado === 'approved' && fase !== 'proxima';
                   return (
                     <li key={r.id} className={`perfil-cita ${estado.clase} ${puedePagar ? 'en-curso' : ''}`}>
                       <div className="perfil-cita-fecha">
@@ -287,8 +305,18 @@ const Perfil = () => {
                         </div>
                       )}
 
-                      {debeSaldo && fase === 'proxima' && (
-                        <p className="perfil-saldo-aviso">Podrás pagar el restante de {soles(r.saldo)} con Yape cuando empiece tu cita.</p>
+                      {verificandoYape && (
+                        <p className="perfil-saldo-aviso">Recibimos tu captura de Yape. Tu horario está separado y lo confirmamos en unos minutos.</p>
+                      )}
+                      {r.estado === 'cancelled' && r.pago_motivo_rechazo && (
+                        <p className="perfil-saldo-aviso">{r.pago_motivo_rechazo} Escríbenos por WhatsApp si ya yapeaste.</p>
+                      )}
+                      {debeSaldo && !verificandoYape && fase === 'proxima' && (
+                        <p className="perfil-saldo-aviso">
+                          {pagoEnLinea
+                            ? `Podrás pagar el restante de ${soles(r.saldo)} con Yape cuando empiece tu cita.`
+                            : `El restante de ${soles(r.saldo)} lo pagas en el local el día de tu cita.`}
+                        </p>
                       )}
 
                       {puedePagar && (

@@ -81,5 +81,7 @@ export const sonarAviso = () => {
       osc.start(ctx.currentTime + t);
       osc.stop(ctx.currentTime + t + 0.3);
     });
+    // Se libera el contexto al terminar (el navegador limita cuántos puede haber abiertos)
+    setTimeout(() => ctx.close().catch(() => {}), 800);
   } catch { /* el navegador bloqueó el audio */ }
 };

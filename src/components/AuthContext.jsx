@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { ADMIN_EMAILS } from '../config';
+import { ADMIN_EMAILS, SITIO_URL } from '../config';
 
 const AuthContext = createContext();
 
@@ -61,7 +61,9 @@ export const AuthProvider = ({ children }) => {
         options: {
           data: {
             nombre: nombre
-          }
+          },
+          // El enlace de confirmación del correo lleva a la web real
+          emailRedirectTo: SITIO_URL
         }
       });
       if (error) throw error;

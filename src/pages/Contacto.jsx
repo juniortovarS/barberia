@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import emailjs from '@emailjs/browser';
+import { enviarCorreosContacto } from '../utils/correos';
 import '../styles/Contacto.css';
 import Footer from '../components/Footer';
 
@@ -13,34 +13,12 @@ const Contacto = () => {
     setMensajeEnviado(false);
     setError(null);
 
-    const adminData = {
-      name: form.current.name.value,
+    // Aviso al administrador y copia de cortesía al visitante (src/utils/correos.js)
+    enviarCorreosContacto({
+      nombre: form.current.name.value,
       email: form.current.email.value,
-      phone: form.current.phone.value,
-      message: form.current.message.value
-    };
-
-    const userData = {
-      user_name: form.current.name.value,
-      user_email: form.current.email.value,
-      user_phone: form.current.phone.value,
-      message: form.current.message.value
-    };
-
-    // 1️⃣ Enviar al ADMINISTRADOR
-    emailjs.send(
-      'service_0ry9t41',
-      'template_96itk4u', // ID de tu plantilla de admin
-      adminData,
-      'QU8t-8ZyBlO4O4jDY' // Public key
-    ).then(() => {
-      // 2️⃣ Enviar confirmación al USUARIO
-      return emailjs.send(
-        'service_0ry9t41',
-        'template_ruofj9e', // ID de tu plantilla para el usuario
-        userData,
-        'QU8t-8ZyBlO4O4jDY'
-      );
+      telefono: form.current.phone.value,
+      mensaje: form.current.message.value,
     }).then(() => {
       setMensajeEnviado(true);
       form.current.reset();
